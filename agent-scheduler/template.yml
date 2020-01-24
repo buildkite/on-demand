@@ -1,0 +1,291 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite On-Demand Agent Scheduler
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: '10.0.0.0/16'
+    PublicOne:
+      CIDR: '10.0.0.0/24'
+    PublicTwo:
+      CIDR: '10.0.1.0/24'
+
+Parameters:
+  EventBridgeBusName:
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9\-\._/]+
+  ClusterName:
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9\-_]{1,255}
+  BuildkiteAgentToken:
+    Type: String
+    NoEcho: true
+
+Resources:
+  # VPC Resources
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap ['SubnetConfig', 'VPC', 'CIDR']
+  PublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 0
+         - Fn::GetAZs: !Ref 'AWS::Region'
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PublicOne', 'CIDR']
+      MapPublicIpOnLaunch: true
+  PublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+         Fn::Select:
+         - 1
+         - Fn::GetAZs: !Ref 'AWS::Region'
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap ['SubnetConfig', 'PublicTwo', 'CIDR']
+      MapPublicIpOnLaunch: true
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref 'PublicRouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref 'InternetGateway'
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetOne
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetTwo
+      RouteTableId: !Ref PublicRouteTable
+
+  # ECS Resources
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ClusterName
+  FargateContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the Fargate containers
+      VpcId: !Ref 'VPC'
+  EcsSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress from self
+      GroupId: !Ref 'FargateContainerSecurityGroup'
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref 'FargateContainerSecurityGroup'
+  EcsSecurityGroupEgressV4:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Egress to anywhere IPv4
+      GroupId: !Ref 'FargateContainerSecurityGroup'
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+  EcsSecurityGroupEgressV6:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Egress to anywhere IPv6
+      GroupId: !Ref 'FargateContainerSecurityGroup'
+      IpProtocol: -1
+      CidrIpv6: ::/0
+
+  RunTaskQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: buildkite-sam-run-task
+      VisibilityTimeout: 300
+  
+  BuildkiteRunTask:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that dequeues Buildkite Job Scheduled notifications and runs an ECS task for them
+      Runtime: nodejs10.x
+      Handler: src/handlers/buildkite-run-task.handler
+      Events:
+        SQSQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RunTaskQueue.Arn
+            BatchSize: 1
+      MemorySize: 128
+      Timeout: 105
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSPollerPolicy:
+            QueueName: !GetAtt RunTaskQueue.QueueName
+        - Statement:
+          - Effect: Allow
+            Action: ecs:RunTask
+            Resource: "*"
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !GetAtt ECSTaskExecutionRole.Arn
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask/*
+          Version: "2012-10-17"
+      Environment:
+        Variables:
+          VPC_SUBNETS: !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ]
+          ACCOUNT_ID: !Ref "AWS::AccountId"
+
+  BuildkiteScheduleTask:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge.
+      Runtime: nodejs10.x
+      Handler: src/handlers/buildkite-schedule-task.handler
+      Events:
+        EventBridge:
+          Type: CloudWatchEvent
+          Properties:
+            EventBusName: !Ref EventBridgeBusName
+            InputPath: $.detail
+            Pattern:
+              detail-type:
+                - "Job Scheduled"
+      MemorySize: 128
+      Timeout: 10
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt RunTaskQueue.QueueName
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref RunTaskQueue
+          ECS_CLUSTER: !Ref ECSCluster
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Allow the ECS Tasks to download images from ECR
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:BatchGetImage'
+
+                  # Allow the ECS tasks to upload logs to CloudWatch
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
+        - PolicyName: FetchDecryptSSMBuildkiteToken
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                  - 'kms:Decrypt'
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token'
+                  - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm'
+
+  BuildkiteEventsLog:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/events/Buildkite"
+      RetentionInDays: 1
+
+  BuildkiteEventsLogRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: Log
+      Description: Log all Buildkite events to a CloudWatch Log Group
+      EventBusName: !Ref EventBridgeBusName
+      EventPattern:
+        account:
+          - !Ref 'AWS::AccountId'
+      Targets:
+        - Id: Log
+          Arn: !GetAtt BuildkiteEventsLog.Arn
+
+  BuildkiteAgentTokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /buildkite/agent-token
+      Type: String
+      Value: !Ref BuildkiteAgentToken
+
+  BuildkiteAgentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ecs/buildkite
+      RetentionInDays: 1
+
+  BuildkiteAgentTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: agent
+          Command:
+            - buildkite-agent
+            - start
+          Essential: true
+          Image: buildkite/agent:3
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Sub /aws/ecs/buildkite
+              awslogs-stream-prefix: ecs
+          Secrets:
+            - Name: BUILDKITE_AGENT_TOKEN
+              ValueFrom: /buildkite/agent-token
+      Cpu: 256
+      Memory: 512
+      Family: buildkite
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      RequiresCompatibilities:
+        - FARGATE
+
+Outputs:
+  ECSTaskExecutionRole:
+    Description: The ECS Task Execution role the runner lambda is permitted to pass to tasks.
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-ECSTaskExecutionRoleArn

@@ -1,0 +1,62 @@
+# agent-scheduler
+
+This project contains source code and supporting files for running Buildkite
+Agents on-demand in response to builds.
+
+- `src` - Code for the application's Lambda function.
+- `template.yml` - A template that defines the application's AWS resources.
+
+Resources for this project are defined in the `template.yml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+
+## Set-up Instructions
+
+Before deploying this serverless application to your AWS account, you have to
+configure the Amazon EventBridge integration between your Buildkite and AWS
+accounts. See the [Buildkite Documentation](https://buildkite.com/docs/integrations/amazon-eventbridge)
+for how to do this.
+
+It is best practice to run your continuous integration in a separate AWS
+account, consider creating a new AWS account in your AWS Organization for the
+EventBridge integration.
+
+Once you have associated your Buildkite Partner Event Source with an Amazon
+EventBridge bus, you are ready to deploy the agent-scheduler project to your
+AWS Account. You can deploy it using the AWS Serverless Application Model CLI or
+using the Serverless Application Repository in the AWS Console.
+
+## Deploy using the Serverless Application Repository in the Console
+
+TBD
+
+## Deploy using the Serverless Application Model on the command line
+
+The AWS SAM CLI is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+
+To use the AWS SAM CLI, you need the following tools:
+
+* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+* Node.js - [Install Node.js 10](https://nodejs.org/en/), including the npm package management tool.
+* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
+
+To deploy the application for the first time, run the following in your shell:
+
+```bash
+sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
+```
+
+This command will package and deploy your application to AWS, with a series of prompts.
+These instructions were written for SAM Version 0.40.0.
+
+* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region,
+something like `agent-scheduler`.
+* **AWS Region**: The AWS region you want to deploy your app to. The `agent-scheduler`
+can be deployed to multiple regions with specific regions targeted using Buildkite
+Agent Query Rules.
+* **Parameter EventBridgeBusName**: The name of the Amazon EventBridge Bus you associated the Buildkite Partner Event source with **NB** ensure this is the name of the EventBus name _not_ the EventBus ARN.
+* **Parameter ClusterName**: The name of the ECS cluster to be created in this region. You will use this
+cluster name in your Buildkite Pipeline Agent Query rules e.g. `queue=ecs/my-cluster-name`
+* **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
+the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
+* **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
+* **Allow SAM CLI IAM role creation**: You must answer yes to this prompt. This SAM application creates an AWS IAM role for your ECS task definitions and roles for the AWS Lambda functions. These are scoped down to minimum required permissions.
+* **Save arguments to samconfig.toml**: Set to yes so your choices are saved to a configuration file inside the project. In the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
