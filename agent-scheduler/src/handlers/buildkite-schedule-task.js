@@ -35,6 +35,8 @@ exports.handler = async (webhook) => {
     let queue = getAgentQueryRule("queue", webhook.job.agent_query_rules);
     let expectedQueue = `ecs/${cluster}`;
     if (queue != expectedQueue) {
+        console.log(`fn=handler at=job_ignored`);
+
         return {
             statusCode: 400,
             body: JSON.stringify({
@@ -43,8 +45,8 @@ exports.handler = async (webhook) => {
         };
     }
     
-    let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job, cluster);    
-    console.log(`fn=handler at=task_scheduled`);
+    let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job, cluster);
+    console.log(`fn=handler at=job_scheduled`);
     
     return {
         statusCode: 201,
