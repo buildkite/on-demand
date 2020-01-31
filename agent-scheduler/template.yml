@@ -125,7 +125,6 @@ Resources:
   RunTaskQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: buildkite-sam-run-task
       VisibilityTimeout: 300
   
   BuildkiteRunTask:
