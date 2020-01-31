@@ -36,6 +36,9 @@ queue name in your Buildkite Pipeline Agent Query rules e.g. `queue=my-queue-nam
 * **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
 the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
 
+When creating the stack you will need to check the options to allow creating
+IAM resources.
+
 ## Deploy using the Serverless Application Model on the command line
 
 The AWS SAM CLI is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
