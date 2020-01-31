@@ -24,7 +24,7 @@ EventBridge bus, you are ready to deploy the `agent-scheduler` stack to your
 AWS Account. You can deploy this stack using the AWS Console on the web or AWS
 Serverless Application Model CLI on your local device.
 
-## Deploy using the Serverless Application Repository in the Console
+## Deploy using the CloudFormation Console
 
 [![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=agent-scheduler&templateURL=https://buildkite-on-demand-us-east-1.s3.amazonaws.com/agent-scheduler/latest/template.yml)
 
