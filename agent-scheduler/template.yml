@@ -132,7 +132,128 @@ Resources:
     Properties:
       Description: A Lambda function that dequeues Buildkite Job Scheduled notifications and runs an ECS task for them
       Runtime: nodejs10.x
-      Handler: src/handlers/buildkite-run-task.handler
+      Handler: index.handler
+      InlineCode: |
+        const AWS = require('aws-sdk');
+
+        function getAgentQueryRule(rule, agentQueryRules) {
+            let taskDefinition = agentQueryRules.filter(query_rule => {
+                    return query_rule.startsWith(`${rule}=`);
+                })
+                .map(query_rule => {
+                    return query_rule.split("=")[1];
+                })
+                .shift();
+            
+            return taskDefinition;
+        }
+
+        function getDefaultEcsRunTaskParams(cluster, job) {
+            let jobId = job.uuid || job.id;
+            let subnets = process.env.VPC_SUBNETS.split(",");
+            
+            let params = {
+                cluster: cluster,
+                count: 1,
+                launchType: "FARGATE",
+                networkConfiguration: {
+                    awsvpcConfiguration: {
+                        assignPublicIp: "ENABLED",
+                        subnets: subnets
+                    }
+                },
+                overrides: {
+                    containerOverrides: [
+                        {
+                            name: "agent",
+                            command: [
+                                "start",
+                                "--disconnect-after-job",
+                                "--disconnect-after-idle-timeout=10"
+                            ],
+                            environment: [
+                                {
+                                    "name": "BUILDKITE_AGENT_ACQUIRE_JOB",
+                                    "value": jobId,
+                                },
+                            ]
+                        }
+                    ],
+                },
+                taskDefinition: "buildkite",
+            };
+            
+            return params;
+        }
+
+        function getEcsRunTaskParamsForJob(cluster, job) {
+            let params = getDefaultEcsRunTaskParams(cluster, job);
+
+            let taskDefinition = getAgentQueryRule("task-definition", job.agent_query_rules);
+            if (taskDefinition != undefined) {
+                // Task definition is overridden...
+
+                console.log(`fn=getEcsRunTaskParamsForJob taskDefinition=${taskDefinition}`);
+                params.taskDefinition = taskDefinition;
+            }
+
+            let taskRole = getAgentQueryRule("task-role", job.agent_query_rules);
+            if (taskRole != undefined) {
+                let taskRoleArn = `${process.env.TASK_ROLE_ARN_PREFIX}/${taskRole}`;
+
+                console.log(`fn=getEcsRunTaskParamsForJob taskRoleArn=${taskRoleArn}`);
+                params.overrides.taskRoleArn = taskRoleArn;
+            }
+            
+            return params;
+        }
+
+        async function sleep(ms){
+            return new Promise(resolve => {
+                setTimeout(resolve, ms)
+            });
+        }
+
+        async function runTaskForBuildkiteJob(cluster, job) {
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt}`);
+            
+            for (var attempt = 1; attempt < 6; attempt++) {
+                try {
+                    let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
+                    let taskParams = getEcsRunTaskParamsForJob(cluster, job);
+
+                    console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask params=${JSON.stringify(taskParams)}`);
+                    let result = await ecs.runTask(taskParams).promise();
+                    console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask result=${JSON.stringify(result)}`);
+
+                    return result;
+                }
+                catch (e) {
+                    console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${JSON.stringify(e)}`);
+                    
+                    await sleep(1000 * Math.pow(attempt, 2));
+                    
+                    continue;
+                }
+            }
+            
+            throw new Error("Couldn't start ECS task after 5 attempts");
+        }
+
+        exports.handler = async (event) => {
+            console.log(`fn=handler event=${JSON.stringify(event)}`);
+            
+            let tasks = event.Records.map(record => {
+                let { Cluster, Job } = JSON.parse(record.body);
+                return runTaskForBuildkiteJob(Cluster, Job);
+            });
+            
+            await Promise.all(tasks);
+
+            return {
+                statusCode: 200,
+            };
+        };
       Events:
         SQSQueueEvent:
           Type: SQS
@@ -165,7 +286,65 @@ Resources:
     Properties:
       Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge.
       Runtime: nodejs10.x
-      Handler: src/handlers/buildkite-schedule-task.handler
+      Handler: index.handler
+      InlineCode: |
+        const AWS = require('aws-sdk');
+        const https = require('https');
+
+        async function scheduleRunTaskForBuildkiteJob(job, cluster) {
+            console.log(`fn=scheduleRunTaskForBuildkiteJob`);
+            
+            let sqs = new AWS.SQS({apiVersion: '2012-11-05'});
+            let message = {
+              MessageBody: JSON.stringify({
+                  Job: job,
+                  Cluster: cluster,
+              }),
+              QueueUrl: process.env.SQS_QUEUE_URL,
+            };
+            return sqs.sendMessage(message).promise();
+        }
+
+        function getAgentQueryRule(rule, agentQueryRules) {
+            let taskDefinition = agentQueryRules.filter(query_rule => {
+                    return query_rule.startsWith(`${rule}=`);
+                })
+                .map(query_rule => {
+                    return query_rule.split("=")[1];
+                })
+                .shift();
+            
+            return taskDefinition;
+        }
+
+        exports.handler = async (webhook) => {
+            console.log(`fn=handler event=${JSON.stringify(webhook)}`);
+            
+            let cluster = process.env.ECS_CLUSTER;
+            
+            let queue = getAgentQueryRule("queue", webhook.job.agent_query_rules);
+            let expectedQueue = `ecs/${cluster}`;
+            if (queue != expectedQueue) {
+                console.log(`fn=handler at=job_ignored`);
+
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({
+                        message: `ignoring this job, the agent query rules specify queue='${queue}' which doesn't match '${expectedQueue}'`,
+                    }),
+                };
+            }
+            
+            let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job, cluster);
+            console.log(`fn=handler at=job_scheduled`);
+            
+            return {
+                statusCode: 201,
+                body: JSON.stringify({
+                    message: "scheduled run task",
+                }),
+            };
+        };
       Events:
         EventBridge:
           Type: CloudWatchEvent
