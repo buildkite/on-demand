@@ -52,7 +52,7 @@ To use the AWS SAM CLI, you need the following tools:
 To deploy `agent-scheduler` for the first time, run the following in your shell:
 
 ```bash
-sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
+sam deploy --capabilities CAPABILITY_IAM --guided
 ```
 
 This command will package and deploy `agent-scheduler` to AWS, with a series of prompts.
