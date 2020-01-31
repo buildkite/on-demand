@@ -3,7 +3,7 @@
 This project contains source code and supporting files for running Buildkite
 Agents on-demand in response to builds.
 
-- `src` - Code for the application's Lambda function.
+- `src` - Code for the application's Lambda functions. These have been inlined into `template.yml` for easier stack creation in any region.
 - `template.yml` - A template that defines the application's AWS resources.
 
 Resources for this project are defined in the `template.yml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
@@ -20,13 +20,21 @@ account, consider creating a new AWS account in your AWS Organization for the
 EventBridge integration.
 
 Once you have associated your Buildkite Partner Event Source with an Amazon
-EventBridge bus, you are ready to deploy the agent-scheduler project to your
-AWS Account. You can deploy it using the AWS Serverless Application Model CLI or
-using the Serverless Application Repository in the AWS Console.
+EventBridge bus, you are ready to deploy the `agent-scheduler` stack to your
+AWS Account. You can deploy this stack using the AWS Console on the web or AWS
+Serverless Application Model CLI on your local device.
 
 ## Deploy using the Serverless Application Repository in the Console
 
-TBD
+[![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=agent-scheduler&templateURL=https://buildkite-on-demand-us-east-1.s3.amazonaws.com/agent-scheduler/latest/template.yml)
+
+The CloudFormation Console will ask you for values for the following parameters:
+
+* **Parameter EventBridgeBusName**: The name of the Amazon EventBridge Bus you associated the Buildkite Partner Event source with **NB** ensure this is the name of the EventBus name _not_ the EventBus ARN.
+* **Parameter ClusterName**: The name of the ECS cluster to be created in this region. You will use this
+cluster name in your Buildkite Pipeline Agent Query rules e.g. `queue=ecs/my-cluster-name`
+* **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
+the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
 
 ## Deploy using the Serverless Application Model on the command line
 
@@ -34,7 +42,7 @@ The AWS SAM CLI is an extension of the AWS CLI that adds functionality for build
 
 To use the AWS SAM CLI, you need the following tools:
 
-* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were written using SAM Version 0.40.0.
 * Node.js - [Install Node.js 10](https://nodejs.org/en/), including the npm package management tool.
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
 
@@ -45,7 +53,6 @@ sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
 ```
 
 This command will package and deploy your application to AWS, with a series of prompts.
-These instructions were written for SAM Version 0.40.0.
 
 * **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region,
 something like `agent-scheduler`.
