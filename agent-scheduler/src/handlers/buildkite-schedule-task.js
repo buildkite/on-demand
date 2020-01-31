@@ -1,14 +1,13 @@
 const AWS = require('aws-sdk');
 const https = require('https');
 
-async function scheduleRunTaskForBuildkiteJob(job, cluster) {
+async function scheduleRunTaskForBuildkiteJob(job) {
     console.log(`fn=scheduleRunTaskForBuildkiteJob`);
     
     let sqs = new AWS.SQS({apiVersion: '2012-11-05'});
     let message = {
       MessageBody: JSON.stringify({
           Job: job,
-          Cluster: cluster,
       }),
       QueueUrl: process.env.SQS_QUEUE_URL,
     };
@@ -30,10 +29,8 @@ function getAgentQueryRule(rule, agentQueryRules) {
 exports.handler = async (webhook) => {
     console.log(`fn=handler event=${JSON.stringify(webhook)}`);
     
-    let cluster = process.env.ECS_CLUSTER;
-    
     let queue = getAgentQueryRule("queue", webhook.job.agent_query_rules);
-    let expectedQueue = `ecs/${cluster}`;
+    let expectedQueue = process.env.BUILDKITE_QUEUE;
     if (queue != expectedQueue) {
         console.log(`fn=handler at=job_ignored`);
 
@@ -45,7 +42,7 @@ exports.handler = async (webhook) => {
         };
     }
     
-    let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job, cluster);
+    let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job);
     console.log(`fn=handler at=job_scheduled`);
     
     return {

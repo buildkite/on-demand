@@ -31,8 +31,8 @@ Serverless Application Model CLI on your local device.
 The CloudFormation Console will ask you for values for the following parameters:
 
 * **Parameter EventBridgeBusName**: The name of the Amazon EventBridge Bus you associated the Buildkite Partner Event source with **NB** ensure this is the name of the EventBus name _not_ the EventBus ARN.
-* **Parameter ClusterName**: The name of the ECS cluster to be created in this region. You will use this
-cluster name in your Buildkite Pipeline Agent Query rules e.g. `queue=ecs/my-cluster-name`
+* **Parameter BuildkiteQueue**: The name of the Buildkite queue this stack will service. You will use this
+queue name in your Buildkite Pipeline Agent Query rules e.g. `queue=my-queue-name`
 * **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
 the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
 
@@ -60,8 +60,8 @@ something like `agent-scheduler`.
 can be deployed to multiple regions with specific regions targeted using Buildkite
 Agent Query Rules.
 * **Parameter EventBridgeBusName**: The name of the Amazon EventBridge Bus you associated the Buildkite Partner Event source with **NB** ensure this is the name of the EventBus name _not_ the EventBus ARN.
-* **Parameter ClusterName**: The name of the ECS cluster to be created in this region. You will use this
-cluster name in your Buildkite Pipeline Agent Query rules e.g. `queue=ecs/my-cluster-name`
+* **Parameter BuildkiteQueue**: The name of the Buildkite queue this stack will service. You will use this
+queue name in your Buildkite Pipeline Agent Query rules e.g. `queue=my-queue-name`
 * **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
 the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
 * **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
