@@ -63,8 +63,7 @@ function getEcsRunTaskParamsForJob(cluster, job) {
 
     let taskRole = getAgentQueryRule("task-role", job.agent_query_rules);
     if (taskRole != undefined) {
-        let accountId = process.env.ACCOUNT_ID;
-        let taskRoleArn = `arn:aws:iam::${accountId}:role/BuildkiteAgentTask/${taskRole}`;
+        let taskRoleArn = `${process.env.TASK_ROLE_ARN_PREFIX}/${taskRole}`;
 
         console.log(`fn=getEcsRunTaskParamsForJob taskRoleArn=${taskRoleArn}`);
         params.overrides.taskRoleArn = taskRoleArn;

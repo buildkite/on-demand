@@ -158,7 +158,7 @@ Resources:
       Environment:
         Variables:
           VPC_SUBNETS: !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ]
-          ACCOUNT_ID: !Ref "AWS::AccountId"
+          TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
 
   BuildkiteScheduleTask:
     Type: AWS::Serverless::Function
