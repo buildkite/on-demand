@@ -289,3 +289,8 @@ Outputs:
     Value: !GetAtt ECSTaskExecutionRole.Arn
     Export:
       Name: !Sub ${AWS::StackName}-ECSTaskExecutionRoleArn
+  BuildkiteAgentTokenParameterPath:
+    Description: The Systems Manager Parameter Store path that the Buildkite Agent Registration token is stored in.
+    Value: /buildkite/agent-token
+    Export:
+      Name: !Sub ${AWS::StackName}-BuildkiteAgentTokenParameterPath
