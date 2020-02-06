@@ -3,10 +3,8 @@
 This project contains source code and supporting files for running Buildkite
 Agents on-demand in response to builds.
 
-- `src` - Code for the application's Lambda functions. These have been inlined into `template.yml` for easier stack creation in any region.
-- `template.yml` - A template that defines the application's AWS resources.
-
-Resources for this project are defined in the `template.yml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+- `src` - Code for the Lambda functions. These have been inlined into `template.yml` for easier stack creation in any region.
+- `template.yml` - A CloudFormation template that defines the AWS resources.
 
 ## Set-up Instructions
 
