@@ -275,7 +275,7 @@ Resources:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
-              - !GetAtt ECSTaskExecutionRole.Arn
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteTaskExecution/*
               - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask/*
           Version: "2012-10-17"
       Environment:
@@ -374,7 +374,7 @@ Resources:
           Principal:
             Service: [ecs-tasks.amazonaws.com]
           Action: ['sts:AssumeRole']
-      Path: /
+      Path: /BuildkiteTaskExecution/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       Policies:
