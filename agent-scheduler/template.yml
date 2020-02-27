@@ -283,6 +283,15 @@ Resources:
           ECS_CLUSTER_NAME: !Ref ECSCluster
           VPC_SUBNETS: !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ]
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
+  RunTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: BuildkiteRunTask
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        !Sub
+        - '/aws/lambda/${LambdaName}'
+        - LambdaName: !Ref BuildkiteRunTask
 
   BuildkiteScheduleTask:
     Type: AWS::Serverless::Function
@@ -364,6 +373,15 @@ Resources:
         Variables:
           SQS_QUEUE_URL: !Ref RunTaskQueue
           BUILDKITE_QUEUE: !Ref BuildkiteQueue
+  ScheduleTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: BuildkiteScheduleTask
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        !Sub
+        - '/aws/lambda/${LambdaName}'
+        - LambdaName: !Ref BuildkiteScheduleTask
 
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -436,7 +454,7 @@ Resources:
             LogDriver: awslogs
             Options:
               awslogs-region: !Ref AWS::Region
-              awslogs-group: !Sub /aws/ecs/buildkite
+              awslogs-group: /aws/ecs/buildkite
               awslogs-stream-prefix: ecs
           Secrets:
             - Name: BUILDKITE_AGENT_TOKEN
