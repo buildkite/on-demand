@@ -33,6 +33,9 @@ The CloudFormation Console will ask you for values for the following parameters:
 queue name in your Buildkite Pipeline Agent Query rules e.g. `queue=my-queue-name`
 * **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
 the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
+* **Parameter VpcSubnetIds**: An optional parameter. If you have an existing VPC you
+want to schedule your agent containers in enter a comma separated list of subnet ids. If left blank
+a simple two subnet VPC will be created.
 
 When creating the stack you will need to check the options to allow creating
 IAM resources.
@@ -43,13 +46,13 @@ The AWS SAM CLI is an extension of the AWS CLI that adds functionality for build
 
 To use the AWS SAM CLI, you need the following tools:
 
+* Ruby - A Ruby script is used to inject the lambda code into the CloudFormation template.
 * AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were written using SAM Version 0.40.0.
-* Node.js - [Install Node.js 10](https://nodejs.org/en/), including the npm package management tool.
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
 
 To deploy `agent-scheduler` for the first time, run the following in your shell:
 
 ```bash
+make template.yml
 sam deploy --capabilities CAPABILITY_IAM --guided
 ```
 
@@ -65,6 +68,9 @@ Agent Query Rules.
 queue name in your Buildkite Pipeline Agent Query rules e.g. `queue=my-queue-name`
 * **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for your Buildkite account. See
 the [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens) for details.
+* **Parameter VpcSubnetIds**: An optional parameter. If you have an existing VPC you
+want to schedule your agent containers in enter a comma separated list of subnet ids. If left blank
+a simple two subnet VPC will be created.
 * **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy changes.
 * **Allow SAM CLI IAM role creation**: You must answer yes to this prompt. This SAM application creates an AWS IAM role for your ECS task definitions and roles for the AWS Lambda functions. These are scoped down to minimum required permissions.
 * **Save arguments to samconfig.toml**: Set to yes so your choices are saved to a configuration file inside the project. In the future you can just re-run `sam deploy` without parameters to deploy changes.
