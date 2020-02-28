@@ -12,6 +12,25 @@ Description: >-
 Transform:
 - AWS::Serverless-2016-10-31
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Buildkite
+        Parameters:
+          - BuildkiteAgentToken
+          - BuildkiteQueue
+      -
+        Label:
+          default: AWS
+        Parameters:
+          - EventBridgeBusName
+          - VpcSubnetIds
+    ParameterLabels:
+      VpcSubnetIds:
+        default: "(Optional) Which VPC subnets should agent containers run in?"
+
 Mappings:
   SubnetConfig:
     VPC:
