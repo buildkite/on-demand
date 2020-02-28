@@ -56,7 +56,7 @@ Parameters:
   VpcSubnetIds:
     Type: CommaDelimitedList
     Default: ''
-    Description: Optional. Comma separated list of VPC subnets to launch agent containers in. If left blank a simple VPC with public subnets, suitable for most use cases, will be created.
+    Description: Comma separated list of VPC subnets to launch agent containers in. If left blank a simple VPC with public subnets, suitable for most use cases, will be created.
 
 Conditions:
   CreateVpc: !Equals [ !Join [ ',', !Ref VpcSubnetIds ], '' ]
