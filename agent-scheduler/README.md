@@ -46,13 +46,13 @@ The AWS SAM CLI is an extension of the AWS CLI that adds functionality for build
 
 To use the AWS SAM CLI, you need the following tools:
 
+* Ruby - A Ruby script is used to inject the lambda code into the CloudFormation template.
 * AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were written using SAM Version 0.40.0.
-* Node.js - [Install Node.js 10](https://nodejs.org/en/), including the npm package management tool.
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community).
 
 To deploy `agent-scheduler` for the first time, run the following in your shell:
 
 ```bash
+make template.yml
 sam deploy --capabilities CAPABILITY_IAM --guided
 ```
 
