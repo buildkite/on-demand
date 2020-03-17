@@ -13,7 +13,19 @@ material.
 
 ## Buildkite Agent Injection
 
+Buildkite agent injection works by confining the Buildkite binary, configuration
+and other directories to a single directory; copying that directory into a
+`FROM scratch` image; and marking the final directory a `VOLUME`.
 
+With that image in hand, it is then possible to schedule a container which
+simply prints and exits, and use the `--volumes-from` Docker option (or platform
+equivalent) to make the agent available in another container. This is possible
+in both ECS Tasks and Kubernetes Pods.
+
+I have published an injectable agent to Docker Hub available at
+[`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar)
+which auto-updates when the base image changes though it is also possible to
+build your own.
 
 ## agent-transform
 
@@ -31,6 +43,7 @@ variables to include, which substacks don't currently allow.
 
 The lambda for this transform and the associated `AWS::CloudFormation::Macro`
 must be deployed first if you intend to use its functionality.
+
 
 A simple `Buildkite::ECS::TaskDefinition` might look like this:
 
@@ -89,3 +102,4 @@ secret list, agent-transform adds permission to fetch and decrypt the given SSM
 parameter path to the ECS Execution Role.
 
 ## Builder Stacks
+
