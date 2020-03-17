@@ -12,7 +12,7 @@ from Buildkite and schedule agents on ECS.
 ## agent-composer
 
 [agent-composer](agent-composer) is a collection of AWS CloudFormation templates
-to create AWS ECS Task Definitions that can be scheduled by
+to help create AWS ECS Task Definitions that can be scheduled on-demand by
 [agent-scheduler](#agent-scheduler).
 
 They are reusable patterns for constructing task definitions that you can
