@@ -12,9 +12,9 @@ from Docker Hub or elsewhere without modification.
 your task definitions sidecar to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
 container access to the raw key material.
-- [`Buildkite::ECS::TaskDefinition`](#buildkiteecstaskdefinition-cloudformation-macro)
-CloudFormation Macro: a Lambda based CloudFormation macro you can deploy to your
-account make writing Buildkite Agent ECS Task Definitions simple.
+- [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro):
+a Lambda based CloudFormation macro you can deploy to your account make writing
+Buildkite Agent ECS Task Definitions simple.
 - [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks):
 drop in CloudFormation substacks to configure resources for building and storing
 Docker images on ECR.
