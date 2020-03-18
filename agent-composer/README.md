@@ -19,6 +19,7 @@ Buildkite Agent ECS Task Definitions simple.
 drop in CloudFormation substacks to configure resources for building and storing
 Docker images on ECR.
 
+
 ## Buildkite Agent Injection
 
 Buildkite agent injection works by confining the Buildkite binary, configuration
@@ -35,6 +36,7 @@ I have published an injectable agent to Docker Hub available at
 which auto-updates when the base image changes, though it is also possible to
 build your own. The source for this image is hosted on
 [GitHub](https://github.com/keithduncan/buildkite-sidecar).
+
 
 ## `iam-ssh-agent` Sidecar
 
@@ -171,9 +173,13 @@ In order to publish a new crate version an authentication token is required.
 secret list, agent-transform adds permission to fetch and decrypt the given SSM
 parameter path to the ECS Execution Role.
 
+
 ## Image Builder CloudFormation Stacks
 
-TBD
+If you cannot compose an agent from a stock image with [agent injection](#buildkite-agent-injection)
+you can build an image instead.
 
-- CodeBuild
-- Kaniko
+There are two builder stacks included in [`builder/`](builder):
+
+- [`CodeBuild`](builder/codebuild.yml): 
+- [`Kaniko`](builder/kaniko.yml): 
