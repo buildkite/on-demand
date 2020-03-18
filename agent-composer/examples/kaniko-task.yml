@@ -1,0 +1,277 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent Docker Image Builder with Kaniko
+
+Parameters:
+  Image:
+    Type: String
+    Description: base image the Buildkite Agent will be injected in to, requires socat or another tool to communicate with the kaniko daemon.
+  BuildkiteAgentImage:
+    Type: String
+    Description: The injectable buildkite agent image to add as a sidecar container.
+    # AllowedPattern: "^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*((\:[\\w\\-_\.]+)|(@[\\w\\-_]+:\\w+)){0,1}$"
+    ConstraintDescription: |
+      must be a Docker image reference e.g. node:12, buildkite/agent:latest, 012345678910.dkr.ecr.us-east-1.amazonaws.com/agent/buildkite:latest, quay.io/organization/image, keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
+  SshAgentBackend:
+    Type: String
+    Description: API Gateway Stage ARN for your `iam-ssh-agent` backend. If specified, an `ssh-agent` sidecar container will be included.
+    Default: ''
+    # AllowedPattern: "^$|^arn:aws[a-zA-Z-]*:execute-api:[a-z0-9\\-]+:\\d{12}:\\w+\\/\\w+$"
+    ConstraintDescription: must be an API Gateway Stage ARN for your `iam-ssh-agent`
+  TaskRoleArn:
+    Type: String
+    Description: (Optional) The default task role for the ECS task.
+    Default: ''
+
+Conditions:
+  IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
+  CreateTaskRole: !Equals [ !Ref TaskRoleArn, '' ]
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: TaskDefinition
+    Properties:
+      LogGroupName: !Sub /aws/ecs/kaniko
+      RetentionInDays: 1
+
+  BuildKanikoSocat:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../builder/codebuild.yml
+      Parameters:
+        SourceRepository: keithduncan/kaniko-socat
+        RepositoryName: sidecar/kaniko
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: agent
+          EntryPoint:
+            - /buildkite/bin/buildkite-agent
+          Command:
+            - start
+          Essential: true
+          Image: !Ref Image
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Sub /aws/ecs/kaniko
+              awslogs-stream-prefix: ecs
+          Environment:
+            -
+              !If
+                - IncludeSshAgent
+                - Name: SSH_AUTH_SOCK
+                  Value: /ssh/socket
+                - !Ref AWS::NoValue
+            - Name: BUILDKITE_BUILD_PATH
+              Value: /workspace
+            - Name: BUILDKITE_HOOKS_PATH
+              Value: /buildkite/hooks
+            - Name: BUILDKITE_PLUGINS_PATH
+              Value: /buildkite/plugins
+            - Name: KANIKO_SOCKET
+              Value: /kanikoctl/socket
+          Secrets:
+            - Name: BUILDKITE_AGENT_TOKEN
+              ValueFrom: /buildkite/agent-token
+          DependsOn:
+            - !If
+              - IncludeSshAgent
+              - ContainerName: ssh-agent
+                Condition: HEALTHY
+              - !Ref AWS::NoValue
+            - ContainerName: kaniko
+              Condition: HEALTHY
+            - ContainerName: agent-init
+              Condition: COMPLETE
+          MountPoints:
+            - !If
+              - IncludeSshAgent
+              - ContainerPath: /ssh
+                SourceVolume: ssh-agent
+              - !Ref AWS::NoValue
+            - ContainerPath: /kanikoctl
+              SourceVolume: kanikoctl
+            - ContainerPath: /workspace
+              SourceVolume: workspace
+          VolumesFrom:
+            - SourceContainer: agent-init
+        - !If
+            - IncludeSshAgent
+            - Name: ssh-agent
+              Command:
+                - iam-ssh-agent
+                - daemon
+                - --bind-to=/ssh/socket
+              Essential: true
+              Image: keithduncan/iam-ssh-agent
+              Environment:
+                - Name: IAM_SSH_AGENT_BACKEND_URL
+                  Value:
+                    !Sub
+                      - "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}"
+                      - ApiId: !Select [ 5, !Split [ ":", !Select [ 0, !Split [ "/", !Ref SshAgentBackend ] ] ] ]
+                        Region: !Select [ 3, !Split [ ":", !Select [ 0, !Split [ "/", !Ref SshAgentBackend ] ] ] ]
+                        Stage: !Select [ 1, !Split [ "/", !Ref SshAgentBackend ] ]
+              LogConfiguration:
+                LogDriver: awslogs
+                Options:
+                  awslogs-region: !Ref AWS::Region
+                  awslogs-group: !Sub /aws/ecs/kaniko
+                  awslogs-stream-prefix: ecs
+              HealthCheck:
+                Command:
+                  - /bin/busybox
+                  - test
+                  - -S
+                  - /ssh/socket
+              MountPoints:
+                - ContainerPath: /ssh
+                  SourceVolume: ssh-agent
+            - !Ref AWS::NoValue
+        - Name: agent-init
+          EntryPoint:
+            - /bin/sh
+            - -c
+          Command:
+            - echo container=agent-init at=initalised
+          Essential: false
+          Image: !Ref BuildkiteAgentImage
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Sub /aws/ecs/kaniko
+              awslogs-stream-prefix: ecs
+        - Name: kaniko
+          Image: !GetAtt BuildKanikoSocat.Outputs.Image
+          Command:
+            # - -d
+            # - -d
+            # - -d
+            # - -d
+            - unix-listen:/kanikoctl/socket,fork
+            - exec:sh -vx,stderr
+          Essential: true
+          DependsOn:
+            - ContainerName: docker-login
+              Condition: COMPLETE
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Sub /aws/ecs/kaniko
+              awslogs-stream-prefix: ecs
+          MountPoints:
+            - ContainerPath: /workspace
+              SourceVolume: workspace
+            - ContainerPath: /kanikoctl
+              SourceVolume: kanikoctl
+            - ContainerPath: /kaniko/.docker
+              SourceVolume: docker-config
+          HealthCheck:
+            Command:
+              - test
+              - -S
+              - /kanikoctl/socket
+        - Name: docker-login
+          Essential: false
+          Image: stedolan/jq:latest
+          EntryPoint:
+            - /bin/bash
+            - -c
+          Command:
+            # Write /docker/config.json
+            - !Sub |
+                jq -n '{"auths":{"https://index.docker.io/v1/":{"auth":env.DOCKER_TOKEN|@base64}},"credHelpers":{"${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com":"ecr-login"}}' >/docker/config.json; echo container=login-init at=initalised
+          Secrets:
+            - Name: DOCKER_TOKEN
+              ValueFrom: /hub.docker.com/keithduncan/token
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Sub /aws/ecs/kaniko
+              awslogs-stream-prefix: ecs
+          MountPoints:
+            - ContainerPath: /docker
+              SourceVolume: docker-config
+      Cpu: 4096
+      Memory: 8192
+      Family: kaniko
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn:
+        !If
+          - CreateTaskRole
+          - !GetAtt TaskRole.Arn
+          - !Ref TaskRoleArn
+      RequiresCompatibilities:
+        - FARGATE
+      Volumes:
+        - !If
+          - IncludeSshAgent
+          - Name: ssh-agent
+          - !Ref AWS::NoValue
+        - Name: docker-config
+        - Name: workspace
+        - Name: kanikoctl
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /BuildkiteTaskExecutionRole/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: FetchDecryptSecrets
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/hub.docker.com/keithduncan/token'
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Condition: CreateTaskRole
+    Properties:
+      Path: /BuildkiteAgentTask/
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Policies:
+        - !If
+          - IncludeSshAgent
+          - PolicyName: SshAgentApi
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action: execute-api:Invoke
+                  Resource: !Sub "${SshAgentBackend}/*/*"
+          - !Ref AWS::NoValue
+
+Outputs:
+  TaskRoleUniqueId:
+    Condition: CreateTaskRole
+    Description: The ECS Task Role Unique ID for granting ssh-agent access.
+    Value: !GetAtt TaskRole.RoleId

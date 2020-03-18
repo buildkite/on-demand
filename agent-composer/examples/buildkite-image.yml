@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent Docker Image Builder with Kaniko
+
+Resources:
+  BuildAgentSidecar:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../builder/codebuild.yml
+      Parameters:
+        SourceRepository: keithduncan/buildkite-agent-sidecar
+        RepositoryName: sidecar/buildkite
