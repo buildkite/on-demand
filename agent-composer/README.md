@@ -1,15 +1,21 @@
 # agent-composer
 
-`agent-composer` combines two patterns I have developed for composing Buildkite
-Agents images that can be scheduled on-demand to run on an ECS cluster:
+`agent-composer` combines several patterns I have developed for composing
+Buildkite Agent ECS task definitions that can be scheduled on-demand. These
+patterns include:
 
 - Buildkite Agent Injection: using a Docker Volume to inject the Buildkite Agent
-into any image, allowing the use of stock images from Docker Hub or elsewhere
+into _any_ image, allowing the use of stock images from Docker Hub or elsewhere
 without modification.
 - `iam-ssh-agent` Sidecar: add an [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent)
 sidecar container to enable secure, IAM controlled access to SSH keys to clone
 source code repositories without granting the container access to the raw key
 material.
+- `Buildkite::ECS::TaskDefinition` CloudFormation Macro: a Lambda based
+CloudFormation macro you can deploy to your account make writing Buildkite Agent
+ECS Task Definitions simple.
+- Image Builder CloudFormation Stacks: drop in CloudFormation substacks to
+configure resources for building and storing custom Docker images on ECR.
 
 ## Buildkite Agent Injection
 
@@ -27,7 +33,11 @@ I have published an injectable agent to Docker Hub available at
 which auto-updates when the base image changes though it is also possible to
 build your own.
 
-## agent-transform
+## `iam-ssh-agent` Sidecar
+
+TBD
+
+## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
 `agent-transform` is a CloudFormation Transform Macro that simplifies creating
 the `AWS::ECS::TaskDefinition` resources for your agents, and reduces
@@ -101,5 +111,9 @@ In order to publish a new crate version an authentication token is required.
 secret list, agent-transform adds permission to fetch and decrypt the given SSM
 parameter path to the ECS Execution Role.
 
-## Builder Stacks
+## Image Builder CloudFormation Stacks
 
+TBD
+
+- CodeBuild
+- Kaniko
