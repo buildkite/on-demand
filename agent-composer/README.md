@@ -59,7 +59,7 @@ set the `SSH_AUTH_SOCK` environment variable to the path to the socket.
 service. For in depth details see the
 [`iam-ssh-agent` documentation](http://github.com/keithduncan/iam-ssh-agent).
 
-A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
+A full example can be seen in [`examples/ssh-task.yml`](examples/ssh-task.yml).
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
