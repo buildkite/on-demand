@@ -188,5 +188,5 @@ an account that has access to the repositories you want to build. Alternatively,
 you can build open source repositories without authentication.
 - [`Kaniko`](builder/kaniko.yml): creates an ECR repository and a task role with
 permission to push to this repository. This stack works in conjunction with the
-[`examples/kaniko-task.yml`](exmaples/kaniko-task.yml) stack to build images
+[`examples/kaniko-task.yml`](examples/kaniko-task.yml) stack to build images
 using an on-demand Buildkite Agent task definition.
