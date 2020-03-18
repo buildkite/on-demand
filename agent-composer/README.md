@@ -61,12 +61,12 @@ A simple `Buildkite::ECS::TaskDefinition` might look like this:
 
 ```yaml
 Ruby2:
-	Type: Buildkite::ECS::TaskDefinition
-	Properties:
-  		Image: ruby:2.7
-  		BuildkiteAgentImage: keithduncan/buildkite-sidecar:3
-  		TaskCpu: 1024
-  		TaskMemory: 2048
+  Type: Buildkite::ECS::TaskDefinition
+  Properties:
+    Image: ruby:2.7
+    BuildkiteAgentImage: keithduncan/buildkite-sidecar:3
+    TaskCpu: 1024
+    TaskMemory: 2048
 ```
 
 This defines a task definition called `ruby2`, which you would address in your
@@ -85,17 +85,17 @@ A more complex `Buildkite::ECS::TaskDefinition` might look like this:
 
 ```yaml
 CargoPublish:
-	Type: Buildkite::ECS::Agent
-	Properties:
-		Image: !GetAtt BuildRust.Outputs.Image
-		BuildkiteAgentImage: !GetAtt BuildAgentSidecar.Outputs.Image
-		SshAgentBackend: !FindInMap [ AgentConfig, !Ref AWS::Region, SshBackend ]
-		Secrets:
-			- Name: CARGO_REGISTRY_TOKEN
-			  ValueFrom: /crates.io/token
-		TaskFamily: cargo-publish
-		TaskCpu: 1024
-		TaskMemory: 2048
+  Type: Buildkite::ECS::Agent
+  Properties:
+    Image: !GetAtt BuildRust.Outputs.Image
+    BuildkiteAgentImage: !GetAtt BuildAgentSidecar.Outputs.Image
+    SshAgentBackend: !FindInMap [ AgentConfig, !Ref AWS::Region, SshBackend ]
+    Secrets:
+      - Name: CARGO_REGISTRY_TOKEN
+        ValueFrom: /crates.io/token
+    TaskFamily: cargo-publish
+    TaskCpu: 1024
+    TaskMemory: 2048
 ```
 
 This task definition uses a family name of `cargo-publish` and is used to
