@@ -60,19 +60,57 @@ A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
-`agent-transform` is a CloudFormation Transform Macro that simplifies creating
-the `AWS::ECS::TaskDefinition` resources for your agents, and reduces
-duplication
+[`agent-transform`](agent-transform) is a CloudFormation Transform Macro that
+simplifies creating the `AWS::ECS::TaskDefinition` resources for your agents,
+and reduces duplication.
 
-This macro will expand a `Type: Buildkite::ECS::TaskDefinition` CloudFormation
-resource into: a task definition, a log group, an IAM Role for Execution (with
+This transform expands any `Type: Buildkite::ECS::TaskDefinition` resources
+into: an ECS task definition, a log group, an IAM Role for Execution (with
 access to the given SSM secrets), and an IAM Role for the Task (with access to
-the given `iam-ssh-agent` backend if any).
+the given `iam-ssh-agent` backend if given).
 
-Using a CloudFormation macro allows passing a list of secrets and environment
-variables to include, which substacks don't currently allow.
+The following resource parameters are supported:
 
-The lambda for this transform and the associated `AWS::CloudFormation::Macro`
+- **Image**: the main image for your task definition, containing the software
+you need for command steps and plugins. The `buildkite-agent` is not required
+if using the `BuildkiteAgentImage` agent injection option.
+- **BuildkiteAgentImage**: Optional, an image with the injectable
+`buildkite-agent`. Should be a `FROM scratch` image that exposes a `/buildkite`
+volume.
+- **SshAgentBackend**: Optional, the ARN for your `iam-ssh-agent` API Gateway
+stage
+- **Secrets**: Optional, a list of `{ Name: MY_NAME, ValueFrom: /ssm/parameter/path }`
+objects. If given the execution role is given access to fetch and decrypt these
+SSM parameters.
+- **Environment**: Optional, a list of `{ Name: MY_NAME, Value: MY_VALUE }`
+objects to set environment variables in the container for `Image`. The Buildkite
+Agent environment variables are included automatically, as is `SSH_AUTH_SOCK` if
+you are using `iam-ssh-agent`.
+- **TaskFamily**: the name of the task definition, must be unique per account
+per region. This will be used by `agent-scheduler` to schedule the task based on
+a `task-definition: my-task-definition` agent query rule in your Buildkite
+Pipeline Steps.
+- **TaskMemory**: how much memory to create the task with, see the
+[`AWS::ECS::TaskDefinition` documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
+for appropriate values.
+- **TaskCpu**: how much CPU to create the task with, see the
+[`AWS::ECS::TaskDefinition` documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-cpu)
+for appropriate values.
+- **TaskRoleArn**: Optional, the default task role for this task definition.
+If unspecified one will be created for you and optionally granted access to the
+given `iam-ssh-agent` API Gateway. If you provide your own task role and are
+using `iam-ssh-agent` you are responsible for ensuring an appropriate access
+policy is included.
+
+
+An execution role is synthesized based on the `Secrets` parameter and is not
+otherwise currently configurable.
+
+
+Using a CloudFormation macro allows passing the list of secrets and environment
+variables to include which substacks don't currently allow.
+
+The Lambda for this transform and the associated `AWS::CloudFormation::Macro`
 must be deployed first if you intend to use its functionality.
 
 
