@@ -1,21 +1,23 @@
 # agent-composer
 
-`agent-composer` combines several patterns I have developed for composing
-Buildkite Agent ECS task definitions that can be scheduled on-demand. These
-patterns include:
+agent-composer combines several patterns I have developed for composing
+Buildkite Agent ECS Task Definitions that can be scheduled on-demand by
+[`agent-scheduler`](../agent-scheduler). These patterns include:
 
-- Buildkite Agent Injection: using a Docker Volume to inject the Buildkite Agent
-into _any_ image, allowing the use of stock images from Docker Hub or elsewhere
-without modification.
-- `iam-ssh-agent` Sidecar: add an [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent)
-sidecar container to enable secure, IAM controlled access to SSH keys to clone
-source code repositories without granting the container access to the raw key
-material.
-- `Buildkite::ECS::TaskDefinition` CloudFormation Macro: a Lambda based
-CloudFormation macro you can deploy to your account make writing Buildkite Agent
-ECS Task Definitions simple.
-- Image Builder CloudFormation Stacks: drop in CloudFormation substacks to
-configure resources for building and storing custom Docker images on ECR.
+- [Buildkite Agent Injection](#buildkite-agent-injection): using a Docker Volume
+to inject the Buildkite Agent into _any_ image, allowing the use of stock images
+from Docker Hub or elsewhere without modification.
+- [`iam-ssh-agent` Sidecar](#iam-ssh-agent-sidecar): adding an
+[`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent) container to
+your task definitions sidecar to enable secure, IAM controlled access to SSH
+keys. This allows source code repositories to be cloned without granting the
+container access to the raw key material.
+- [`Buildkite::ECS::TaskDefinition`](#buildkiteecstaskdefinition-cloudformation-macro)
+CloudFormation Macro: a Lambda based CloudFormation macro you can deploy to your
+account make writing Buildkite Agent ECS Task Definitions simple.
+- [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks):
+drop in CloudFormation substacks to configure resources for building and storing
+Docker images on ECR.
 
 ## Buildkite Agent Injection
 
