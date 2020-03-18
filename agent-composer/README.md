@@ -37,7 +37,24 @@ build your own.
 
 ## `iam-ssh-agent` Sidecar
 
-TBD
+Adding an `iam-ssh-agent` container to your task definition allows your
+Buildkite agents to clone private repositories without granting them access to
+the raw key material. The private keys are securely kept behind a service
+interface that offers `list-keys` and `sign data` operations, a bit like a
+network attached hardware security module.
+
+Incorporating the `ssh-agent` requires these steps:
+
+1. Add a volume to your task definition called `ssh-agent`.
+1. Add an `Essential: true` container to your task definition that boots the
+`iam-ssh-agent` in daemon mode: `iam-ssh-agent daemon --bind-to=/ssh-agent/socket`
+and mounts the `ssh-agent` volume at `/ssh-agent`.
+1. Mount the `ssh-agent` volume in to the container with the Buildkite Agent and
+set the `SSH_AUTH_SOCK` environment variable to the path to the socket.
+1. Give the ECS task definition a task role, grant this role access to the
+`iam-ssh-agent` API Gateway, and permit access to the ssh keys hosted by the
+service. For in depth details see the
+[`iam-ssh-agent` documentation](http://github.com/keithduncan/iam-ssh-agent).
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
