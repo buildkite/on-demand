@@ -59,7 +59,7 @@ set the `SSH_AUTH_SOCK` environment variable to the path to the socket.
 service. For in depth details see the
 [`iam-ssh-agent` documentation](http://github.com/keithduncan/iam-ssh-agent).
 
-A full example can be seen in [`examples/ssh-task.yml`](examples/ssh-task.yml).
+A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
@@ -188,5 +188,6 @@ an account that has access to the repositories you want to build. Alternatively,
 you can build open source repositories without authentication.
 - [`Kaniko`](builder/kaniko.yml): creates an ECR repository and a task role with
 permission to push to this repository. This stack works in conjunction with the
-[`examples/kaniko-task.yml`](examples/kaniko-task.yml) stack to build images
-using an on-demand Buildkite Agent task definition.
+[`examples/kaniko/kaniko.yml`](examples/kaniko/kaniko.yml) stack to build images
+using an on-demand Buildkite Agent task definition. See the
+[kaniko documentation](examples/kaniko) for more details on this stack.
