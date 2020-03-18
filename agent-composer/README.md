@@ -32,8 +32,9 @@ in both ECS Tasks and Kubernetes Pods.
 
 I have published an injectable agent to Docker Hub available at
 [`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar)
-which auto-updates when the base image changes though it is also possible to
-build your own.
+which auto-updates when the base image changes, though it is also possible to
+build your own. The source for this image is hosted on
+[GitHub](https://github.com/keithduncan/buildkite-sidecar).
 
 ## `iam-ssh-agent` Sidecar
 
