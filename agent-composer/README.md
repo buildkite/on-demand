@@ -2,14 +2,35 @@
 
 agent-composer combines several patterns I have developed for composing
 Buildkite Agent ECS Task Definitions that can be scheduled on-demand by
-[`agent-scheduler`](../agent-scheduler). These patterns include:
+[`agent-scheduler`](../agent-scheduler).
 
-- [Buildkite Agent Injection](#buildkite-agent-injection): using a Docker Volume
+The goal is produce a Docker image containing the tools you use to perform
+continuous integration or deployment, and an IAM Task Role to permit access to
+any AWS services you require, wrapped together in an ECS Task Definition, for
+each pipeline or pipeline step. Task Definitions don’t have to map images 1:1
+with Task Roles, you can reuse the same image for different pipelines or steps
+with and override the Task Role at scheduling time.
+
+Composing a Docker image with the Buildkite Agent installed can be repetitive
+and prevents tracking an official image from Docker Hub without modification.
+[Buildkite Agent Injection](#buildkite-agent-injection) allows you to side load
+the Buildkite Agent into an existing image, reducing the need to build your own
+Docker images.
+
+It is also possible to combine Agent Injection with your own images hosted on
+ECR, Artifactory or private Docker Hub repositories, anywhere you can configure
+ECS to pull an image from. See [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
+for documentation on how to easily build a a GitHub repository with a Dockerfile
+into an image for your task definitions.
+
+# Patterns
+
+- [Buildkite Agent Injection](#buildkite-agent-injection): use a Docker Volume
 to inject the Buildkite Agent into _any_ image, allowing the use of stock images
 from Docker Hub or elsewhere without modification.
-- [`iam-ssh-agent` Sidecar](#iam-ssh-agent-sidecar): adding an
-[`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent) container to
-your task definitions sidecar to enable secure, IAM controlled access to SSH
+- [`iam-ssh-agent` Sidecar](#iam-ssh-agent-sidecar): add an
+[`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent) sidecar
+container to your task definition to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
 container access to the raw key material.
 - [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro):
