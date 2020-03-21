@@ -77,27 +77,6 @@ exports.handler = async (event) => {
                 },
             };
 
-            var ssmParameters = [
-                { "Fn::Sub": 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token' },
-            ];
-
-            if (Secrets != undefined) {
-                // List of Objects with Name, ValueFrom
-
-                for (let secret of Secrets) {
-                    // Secret is Object with Name, ValueFrom
-
-                    ssmParameters.push({
-                        "Fn::Sub": [
-                            'arn:aws:ssm:\${AWS::Region}:\${AWS::AccountId}:parameter${ValueFrom}',
-                            {
-                                ValueFrom: secret['ValueFrom'],
-                            }
-                        ]
-                    })
-                }
-            }
-
             var containerSecrets = [
                 {
                     Name: 'BUILDKITE_AGENT_TOKEN',
@@ -107,6 +86,20 @@ exports.handler = async (event) => {
             if (Secrets != undefined) {
                 containerSecrets = containerSecrets.concat(Secrets);
             }
+
+            // Construct a list of SSM parameters to give the container access
+            // to based on containerSecrets
+            var ssmParameters = containerSecrets.map((secret) => {
+                // Secret is Object with Name, ValueFrom
+                return {
+                    "Fn::Sub": [
+                        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ValueFrom}',
+                        {
+                            ValueFrom: secret['ValueFrom'],
+                        }
+                    ]
+                };
+            });
 
             resources[executionRoleLogicalName] = {
                 Type: 'AWS::IAM::Role',
