@@ -20,6 +20,11 @@ exports.handler = async (event) => {
 
     console.log(`doing processing...`);
 
+    let Globals = fragment.Globals || {};
+    delete fragment.Globals;
+
+    let GlobalsTaskDefinition = Globals.TaskDefinition || {};
+
     let resources = {};
 
     for (let resourceName in fragment['Resources']) {
@@ -81,10 +86,12 @@ exports.handler = async (event) => {
             },
         };
 
+        let BuildkiteAgentTokenParameterPath = GlobalsTaskDefinition.BuildkiteAgentTokenParameterPath || '/buildkite/agent-token';
+
         var containerSecrets = [
             {
                 Name: 'BUILDKITE_AGENT_TOKEN',
-                ValueFrom: '/buildkite/agent-token',
+                ValueFrom: BuildkiteAgentTokenParameterPath,
             }
         ];
         if (Secrets != undefined) {
