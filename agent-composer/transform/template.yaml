@@ -34,8 +34,8 @@ Resources:
   Transform:
     Type: AWS::CloudFormation::Macro
     Properties:
-      Description: A CloudFormation macro to transform Buildkite::ECS::Agent resources.
-      FunctionName: !Ref BuildkiteAgentMacroFunction
+      Description: A CloudFormation macro to transform Buildkite::ECS::TaskDefinition resources.
+      FunctionName: !Ref TransformFunction
       LogGroupName: /aws/cloudformation/buildkite-agent-macro
       Name: !Ref TransformName
   TransformLogGroup:
