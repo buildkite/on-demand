@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Simple Buildkite Agent Task Definitions
+
+Transform:
+- Buildkite-Agents-2020-03-21
+
+Globals:
+  TaskDefinition:
+    BuildkiteAgentTokenParameterPath: !ImportValue agent-scheduler-BuildkiteAgentTokenParameter
+
+Parameters:
+  SshAgentBackend:
+    Type: String
+    Description: Optional, iam-ssh-agent backend stage ARN.
+    Default: ''
+
+  IncludeKaniko:
+    Type: String
+    Description: Whether to include the Kaniko image builder task definition
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
+  DockerConfigHubTokenParameterPath:
+    Type: String
+    Default: ''
+
+Conditions:
+  HasSshAgentBackend: !Not [ !Equals [ '', !Ref SshAgentBackend ]]
+  IncludeKaniko: !Equals [ 'true', !Ref IncludeKaniko ]
+
+Resources:
+  # If an SshAgentBackend is given, include a debug task definition
+  Ssh:
+    Type: AWS::CloudFormation::Stack
+    Condition: HasSshAgentBackend
+    Properties:
+      TemplateURL: ssh.yml
+      Parameters:
+        BuildkiteAgentTokenParameterPath: !ImportValue agent-scheduler-BuildkiteAgentTokenParameter
+        SshAgentBackend: !Ref SshAgentBackend
+
+  # The default task definition to be used if no task-definition agent query
+  # rule is given.
+  Buildkite:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: keithduncan/buildkite-base:latest
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      SshAgentBackend: !Ref SshAgentBackend
+      TaskFamily: buildkite
+
+  # Stock Ruby 2.7 image with injected agent.
+  Ruby2:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: ruby:2.7
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      SshAgentBackend: !Ref SshAgentBackend
+      TaskFamily: ruby2
+
+  # Stock terraform image with injected agent.
+  #
+  # Should be coupled with task roles that can perform terraform plan and apply
+  # in your accounts.
+  #
+  # Can be combined with https://github.com/cultureamp/aws-assume-role-buildkite-plugin
+  # to terraform plan and apply in other AWS accounts.
+  Terraform:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: hashicorp/terraform:light
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      SshAgentBackend: !Ref SshAgentBackend
+      TaskFamily: terraform
+
+  # If you want to build images, include this substack.
+  Kaniko:
+    Type: AWS::CloudFormation::Stack
+    Condition: IncludeKaniko
+    Properties:
+      TemplateURL: kaniko/kaniko.yml
+      Parameters:
+        Image: keithduncan/buildkite-base:latest
+        BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+        SshAgentBackend:
+          !If
+            - HasSshAgentBackend
+            - !Ref SshAgentBackend
+            - !Ref AWS::NoValue
+        DockerConfigHubTokenParameterPath: !Ref DockerConfigHubTokenParameterPath
+        # Default to the registry for the account and region deployed to
+        DockerConfigAwsRegistriesEcrHelper:
+          !Join
+            - ","
+            - [ !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" ]
+
+  # Build an image for the AWS SAM CLI using Kaniko.
+  #
+  # See https://github.com/keithduncan/sam-agent for an example image
+  # definition that can be built with CodeBuild or Kaniko.
+  #
+  # To publish to this ECR repository use agent query rules like:
+  #
+  # agents:
+  #   task-definition: kaniko
+  #   task-role: BuildSam
+  BuildSam:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: kaniko/builder.yml
+      Parameters:
+        RepositoryName: agent/sam
+        TaskRoleName: BuildSam
+  # AWS SAM CLI task definition.
+  #
+  # Can be used to publish SAM packages, publish SAR application versions etc
+  Sam:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: !GetAtt BuildSamAgent.Outputs.Image
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      SshAgentBackend: !Ref SshAgentBackend
+      TaskFamily: sam
+      Environment:
+        - Name: SAM_CLI_TELEMETRY
+          Value: 0
+  # Role that can be used to publish to a sar application.
+  #
+  # Use agent query rules like:
+  #
+  # agents:
+  #   task-definition: sam
+  #   task-role: PublishServerlessRepo
+  PublishServerlessRepoRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /BuildkiteAgentTask/
+      RoleName: PublishServerlessRepo
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: [sts:AssumeRole]
+      Policies:
+        - PolicyName: PublishServerlessRepo
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: arn:aws:s3:::your-bucket-name/your-sar-application/*
+              - Effect: Allow
+                Action: serverlessrepo:CreateApplicationVersion
+                # Assume us-east-1 for public applications, could be somewhere
+                # else for private ones.
+                Resource: !Sub arn:aws:serverlessrepo:us-east-1:${AWS::AccountId}:applications/your-sar-application
