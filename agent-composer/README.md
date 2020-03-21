@@ -200,14 +200,14 @@ parameter path to the ECS Execution Role.
 If you cannot compose an agent from a stock image with [agent injection](#buildkite-agent-injection)
 you can build an image instead.
 
-There are two builder stacks included in [`builder/`](builder):
+There are two image builder stack examples:
 
-- [`CodeBuild`](builder/codebuild.yml): creates an AWS CodeBuild Project to
+- [`CodeBuild`](examples/codebuild/codebuild.yml): creates an AWS CodeBuild Project to
 build an image from a Dockerfile in a GitHub repository and stores the result in
 AWS ECR. This stack requires you to connect CodeBuild to GitHub using OAuth with
 an account that has access to the repositories you want to build. Alternatively,
 you can build open source repositories without authentication.
-- [`Kaniko`](builder/kaniko.yml): creates an ECR repository and a task role with
+- [`Kaniko`](examples/kaniko/builder.yml): creates an ECR repository and a task role with
 permission to push to this repository. This stack works in conjunction with the
 [`examples/kaniko/kaniko.yml`](examples/kaniko/kaniko.yml) stack to build images
 using an on-demand Buildkite Agent task definition. See the
