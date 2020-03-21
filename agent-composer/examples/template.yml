@@ -7,14 +7,20 @@ Transform:
 
 Globals:
   TaskDefinition:
+    # Use the buildkite agent token path from a previously deployed
+    # agent-scheduler stack.
     BuildkiteAgentTokenParameterPath: !ImportValue agent-scheduler-BuildkiteAgentTokenParameter
 
 Parameters:
+  # Set this parameter to an iam-ssh-agent backend stage ARN if you want you
+  # agents to clone private repositories using git+ssh.
   SshAgentBackend:
     Type: String
     Description: Optional, iam-ssh-agent backend stage ARN.
     Default: ''
 
+  # Set this parameter if you want to include the kaniko image builder task
+  # definition.
   IncludeKaniko:
     Type: String
     Description: Whether to include the Kaniko image builder task definition
@@ -22,6 +28,7 @@ Parameters:
       - 'true'
       - 'false'
     Default: 'false'
+  # Set this parameter if you want the kaniko stack to publish to docker hub.
   DockerConfigHubTokenParameterPath:
     Type: String
     Default: ''
@@ -32,6 +39,10 @@ Conditions:
 
 Resources:
   # If an SshAgentBackend is given, include a debug task definition.
+  #
+  # This task definition can be scheduled with any task role that
+  # ecs-tasks.amazonaws.com can assume to verify what ssh keys the task role
+  # has access to on the iam-ssh-agent backend.
   Ssh:
     Type: AWS::CloudFormation::Stack
     Condition: HasSshAgentBackend
