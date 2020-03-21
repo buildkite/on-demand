@@ -41,7 +41,7 @@ container to your task definition to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
 container access to the raw key material.
 - [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro):
-a Lambda based CloudFormation macro you can deploy to your account make writing
+a Lambda based CloudFormation Macro you can deploy to your account make writing
 Buildkite Agent ECS Task Definitions simple.
 - [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks):
 drop in CloudFormation substacks to configure resources for building and storing
@@ -64,6 +64,8 @@ I have published an injectable agent to Docker Hub available at
 which auto-updates when the base image changes, though it is also possible to
 build your own. The source for this image is hosted on
 [GitHub](https://github.com/keithduncan/buildkite-sidecar).
+
+Adding the agent sidecar to your task definition can be handled by the [CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro).
 
 
 ## `iam-ssh-agent` Sidecar
@@ -88,6 +90,9 @@ service. For in depth details see the
 [`iam-ssh-agent` documentation](http://github.com/keithduncan/iam-ssh-agent).
 
 A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
+
+Adding the `iam-ssh-agent` sidecar to your task definition can be handled by the
+[CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro).
 
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
@@ -144,7 +149,7 @@ An execution role is synthesized based on the `Secrets` parameter and is not
 otherwise configurable.
 
 
-Using a CloudFormation macro allows passing the list of secrets and environment
+Using a CloudFormation Macro allows passing the list of secrets and environment
 variables to include which substacks don't currently allow.
 
 The Lambda for this transform and the associated `AWS::CloudFormation::Macro`
