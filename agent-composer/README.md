@@ -96,6 +96,9 @@ The [`transform`](transform) directory contains an AWS SAM project that deploys
 a CloudFormation Transform Macro to simplify creating the
 `AWS::ECS::TaskDefinition` resources for your agents and reduces duplication.
 
+The transform can be deployed using the AWS SAM CLI or from the AWS Serverless
+Application Repository:
+
 [![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
 This transform expands any `Type: Buildkite::ECS::TaskDefinition` resources
