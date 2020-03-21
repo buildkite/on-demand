@@ -1,7 +1,7 @@
 # agent-composer
 
-agent-composer combines several patterns I have developed for composing
-Buildkite Agent ECS Task Definitions that can be scheduled on-demand by
+agent-composer combines several patterns for composing Buildkite Agent ECS Task
+Definitions that can be scheduled on-demand by
 [`agent-scheduler`](../agent-scheduler).
 
 The goal is produce an ECS Task Definition for each Buildkite Pipeline or
@@ -74,12 +74,16 @@ Adding the agent sidecar to your task definition can be handled by the [CloudFor
 ## `iam-ssh-agent` Sidecar
 
 Adding an `iam-ssh-agent` container to your task definition allows your
-Buildkite agents to clone private repositories without granting them access to
-the raw key material. The private keys are securely kept behind a service
-interface that offers `list-keys` and `sign data` operations, a bit like a
-network attached hardware security module.
+Buildkite agents to clone private repositories using git+ssh without granting
+the container access to the raw key material. The private keys are securely kept
+behind a service interface that offers `list-keys` and `sign data` operations, a
+bit like a network attached hardware security module.
 
-Incorporating the `ssh-agent` requires these steps:
+To deploy an `iam-ssh-agent` backend, see the
+[`iam-ssh-agent` project documentation](http://github.com/keithduncan/iam-ssh-agent).
+
+Once you have an `iam-ssh-agent` backend, you can add the client to your task
+definitions:
 
 1. Add a volume to your task definition called `ssh-agent`.
 1. Add an `Essential: true` container to your task definition that boots the
@@ -89,8 +93,7 @@ and mounts the `ssh-agent` volume at `/ssh-agent`.
 set the `SSH_AUTH_SOCK` environment variable to the path to the socket.
 1. Give the ECS task definition a task role, grant this role access to the
 `iam-ssh-agent` API Gateway, and permit access to the ssh keys hosted by the
-service. For in depth details see the
-[`iam-ssh-agent` documentation](http://github.com/keithduncan/iam-ssh-agent).
+service.
 
 A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
 
