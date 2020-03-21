@@ -388,7 +388,6 @@ exports.handler = async (event) => {
                 },
                 HealthCheck: {
                     Command: [
-                        '/bin/busybox',
                         'test',
                         '-S',
                         '/ssh/socket',
