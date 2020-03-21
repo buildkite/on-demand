@@ -11,24 +11,6 @@ Task Role to permit access to any AWS services you require. Task Definitions
 don’t have to map 1:1 with Task Roles, you can schedule a Task Definition for
 different pipelines or steps and override the Task Role for each.
 
-Composing a Docker image with the Buildkite Agent installed can be repetitive
-and prevents tracking an official image from Docker Hub without modification.
-[Buildkite Agent Injection](#buildkite-agent-injection) allows you to side load
-the Buildkite Agent into an existing image, reducing the need to build your own
-Docker images.
-
-It is also possible to combine Agent Injection with your own purpose built
-images hosted on ECR, Artifactory or private Docker Hub repositories, anywhere
-you can configure ECS to pull an image from. See
-[Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
-for documentation on how to easily build a GitHub repository with a Dockerfile
-into an image for use in your task definitions.
-
-| Image Source | Agent Included? | Can Inject Agent? |
-| --- | --- | --- |
-| Official Docker Hub | Typically, no | ✔︎ |
-| Purpose Built | If needed | ✔︎ |
-
 
 # Patterns
 
@@ -50,14 +32,31 @@ Docker images on ECR.
 
 ## Buildkite Agent Injection
 
-Buildkite agent injection works by confining the Buildkite binary, configuration
-and other directories to a single directory; copying that directory into a
-`FROM scratch` image; and marking the final directory a `VOLUME`.
+Composing an upstream Docker image with the Buildkite Agent installed can be
+repetitive and prevents tracking an official image from Docker Hub without
+modification. Buildkite Agent Injection allows you to side load the Buildkite
+Agent into an existing image, reducing the need to build your own Docker images.
 
-With that image in hand, it is then possible to schedule a container which
-simply prints and exits, and use the `--volumes-from` Docker option (or platform
-equivalent) to make the agent available in another container. This is possible
-in both ECS Tasks and Kubernetes Pods.
+It is also possible to combine Agent Injection with your own purpose built
+images hosted on ECR, Artifactory or private Docker Hub repositories. See
+[Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
+for documentation on how to easily build a GitHub repository with a Dockerfile
+into an image for use in your task definitions.
+
+| Image Source | Agent Included? | Can Inject Agent? |
+| --- | --- | --- |
+| Official Docker Hub | Typically, no | ✔︎ |
+| Purpose Built | If needed | ✔︎ |
+
+Buildkite agent injection works by confining the Buildkite Agent binary,
+configuration and other directories to a single directory; copying that
+directory into a `FROM scratch` image; and marking the final directory a
+`VOLUME`.
+
+With that image in hand, it is possible to schedule a container which simply
+`echo`s to stdout and exits, while using the `--volumes-from` Docker option
+(or platform equivalent) to bring the `buildkite` volume in to another
+container. This is possible in both ECS Tasks and Kubernetes Pods.
 
 I have published an injectable agent to Docker Hub available at
 [`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar)
