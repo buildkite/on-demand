@@ -3,6 +3,8 @@ Description: >-
   Buildkite Agent with sidecar SSH Agent
 
 Parameters:
+  BuildkiteAgentTokenParameterPath:
+    Type: String
   SshAgentBackend:
     Type: String
 
@@ -30,7 +32,7 @@ Resources:
               Value: /ssh/socket
           Secrets:
             - Name: BUILDKITE_AGENT_TOKEN
-              ValueFrom: /buildkite/agent-token
+              ValueFrom: !Ref BuildkiteAgentTokenParameterPath
           DependsOn:
             - Condition: HEALTHY
               ContainerName: ssh-agent
