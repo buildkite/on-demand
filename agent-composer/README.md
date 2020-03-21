@@ -4,12 +4,12 @@ agent-composer combines several patterns I have developed for composing
 Buildkite Agent ECS Task Definitions that can be scheduled on-demand by
 [`agent-scheduler`](../agent-scheduler).
 
-The goal is produce a Docker image containing the tools you use to perform
-continuous integration or deployment, and an IAM Task Role to permit access to
-any AWS services you require, wrapped together in an ECS Task Definition, for
-each pipeline or pipeline step. Task Definitions don’t have to map images 1:1
-with Task Roles, you can reuse the same image for different pipelines or steps
-with and override the Task Role at scheduling time.
+The goal is produce an ECS Task Definition for each Buildkite Pipeline or
+Pipeline Step. Each task definition needs a Docker image containing the tools
+you use to perform continuous integration or deployment, and optionally an IAM
+Task Role to permit access to any AWS services you require. Task Definitions
+don’t have to map 1:1 with Task Roles, you can schedule a Task Definition for
+different pipelines or steps and override the Task Role for each.
 
 Composing a Docker image with the Buildkite Agent installed can be repetitive
 and prevents tracking an official image from Docker Hub without modification.
