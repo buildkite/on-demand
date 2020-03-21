@@ -31,7 +31,7 @@ Conditions:
   IncludeKaniko: !Equals [ 'true', !Ref IncludeKaniko ]
 
 Resources:
-  # If an SshAgentBackend is given, include a debug task definition
+  # If an SshAgentBackend is given, include a debug task definition.
   Ssh:
     Type: AWS::CloudFormation::Stack
     Condition: HasSshAgentBackend
@@ -75,7 +75,14 @@ Resources:
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: terraform
 
-  # If you want to build images, include this substack.
+  # If you want to build images using a Buildkite Pipeline, include this
+  # substack.
+  #
+  # This task definition can build and publish to docker hub if
+  # DockerConfigHubTokenParameterPath is given.
+  #
+  # To publish to an ECR repository include a kaniko/builder.yml substack.
+  # Images built with Kaniko can even be referenced by new task definitions!
   Kaniko:
     Type: AWS::CloudFormation::Stack
     Condition: IncludeKaniko
@@ -96,7 +103,7 @@ Resources:
             - ","
             - [ !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" ]
 
-  # Build an image for the AWS SAM CLI using Kaniko.
+  # Build an image for the AWS SAM CLI using a Buildkite Pipeline and Kaniko.
   #
   # See https://github.com/keithduncan/sam-agent for an example image
   # definition that can be built with CodeBuild or Kaniko.
@@ -113,9 +120,10 @@ Resources:
       Parameters:
         RepositoryName: agent/sam
         TaskRoleName: BuildSam
-  # AWS SAM CLI task definition.
+  # AWS SAM CLI task definition using the built sam image.
   #
   # Can be used to publish SAM packages, publish SAR application versions etc
+  # when scheduled with an appropriate task role.
   Sam:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
@@ -126,7 +134,7 @@ Resources:
       Environment:
         - Name: SAM_CLI_TELEMETRY
           Value: 0
-  # Role that can be used to publish to a sar application.
+  # An example task role that can be used to publish to a SAR application.
   #
   # Use agent query rules like:
   #
