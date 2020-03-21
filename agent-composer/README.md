@@ -168,11 +168,11 @@ Ruby2:
     TaskMemory: 2048
 ```
 
-This defines a task definition called `ruby2`, which you would address in your
-on-demand pipeline with an Agent Query Rule of `task-definition: ruby2`.
+This creates a task definition called `ruby2`, which you would address in your
+on-demand pipeline with a `task-definition: ruby2` Agent Query Rule.
 
 The main image is `ruby:2.7` from Docker Hub, the Buildkite sidecar is
-`keithduncan/buildkite-sidecar:3`.
+`keithduncan/buildkite-sidecar:latest`.
 
 This image doesn't have an `iam-ssh-agent` sidecar and so cannot clone private
 repositories.
@@ -200,8 +200,8 @@ CargoPublish:
 This task definition uses a family name of `cargo-publish` and is used to
 publish new crate versions to https://crates.io.
 
-The main image is the output of one of the [builder stacks](#builder-stacks),
-the Buildkite sidecar is also the output of a builder stack.
+The main image is the output of an [image builder stack](#image-builder-cloudformation-stacks),
+and the Buildkite sidecar is also the output of a builder stack.
 
 This image does have an `iam-ssh-agent` sidecar, included automatically by
 specifying the ARN of the API Gateway stage in the `SshAgentBackend` parameter.
@@ -209,8 +209,8 @@ specifying the ARN of the API Gateway stage in the `SshAgentBackend` parameter.
 In order to publish a new crate version an authentication token is required.
 `cargo`, the rust build tool, supports reading this token from the
 `CARGO_REGISTRY_TOKEN` environment variable. By including this item in the
-secret list, agent-transform adds permission to fetch and decrypt the given SSM
-parameter path to the ECS Execution Role.
+secret list, the macro adds permission to fetch and decrypt the given SSM
+parameter path to the task definition's ECS Execution Role.
 
 
 ## Image Builder CloudFormation Stacks
