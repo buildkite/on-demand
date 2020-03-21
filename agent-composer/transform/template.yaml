@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   buildkite-on-demand-transform
 
-  Sample SAM Template for buildkite-on-demand-transform
+  A CloudFormation Macro to make defining Buildkite Agent ECS Task Definitions easy.
 
 Parameters:
   TransformName:
