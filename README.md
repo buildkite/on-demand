@@ -1,7 +1,15 @@
 # buildkite on-demand
 
-This repository contains the resources you need to configure Amazon AWS resources
-to schedule and run Buildkite builds on-demand.
+## Getting Started
+
+This repository contains the resources you need to configure Amazon AWS
+resources to schedule and run the builds for your Buildkite Organization
+on-demand.
+
+First, [deploy the agent-scheduler](agent-scheduler) to an AWS account dedicated
+to your continuous integration workload. Once agent-scheduler has been deployed,
+you can define schedulable task definitions using
+[agent-composer](agent-composer).
 
 ## agent-scheduler
 
