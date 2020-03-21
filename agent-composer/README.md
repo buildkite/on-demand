@@ -23,10 +23,10 @@ ECS to pull an image from. See [Image Builder CloudFormation Stacks](#image-buil
 for documentation on how to easily build a a GitHub repository with a Dockerfile
 into an image for your task definitions.
 
-| Image Source | Can Inject Agent? | Agent Included? |
+| Image Source | Agent Included? | Can Inject Agent? |
 | --- | --- | --- |
-| Official Docker Hub | ✔︎ | Typically, no |
-| Purpose Built | ✔︎ | If needed |
+| Official Docker Hub | Typically, no | ✔︎ |
+| Purpose Built | If needed | ✔︎ |
 
 
 # Patterns
