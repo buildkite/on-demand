@@ -23,6 +23,12 @@ ECS to pull an image from. See [Image Builder CloudFormation Stacks](#image-buil
 for documentation on how to easily build a a GitHub repository with a Dockerfile
 into an image for your task definitions.
 
+| Image | Agent Injected | Agent Included |
+| --- | --- | --- |
+| Docker Hub | ✔︎ | |
+| Private | ✔︎ | Optional |
+
+
 # Patterns
 
 - [Buildkite Agent Injection](#buildkite-agent-injection): use a Docker Volume
