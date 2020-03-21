@@ -92,9 +92,11 @@ A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
 
 ## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
 
-[`agent-transform`](agent-transform) is a CloudFormation Transform Macro that
-simplifies creating the `AWS::ECS::TaskDefinition` resources for your agents,
-and reduces duplication.
+The [`transform`](transform) directory contains an AWS SAM project that deploys
+a CloudFormation Transform Macro to simplify creating the
+`AWS::ECS::TaskDefinition` resources for your agents and reduces duplication.
+
+[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
 This transform expands any `Type: Buildkite::ECS::TaskDefinition` resources
 into: an ECS task definition, a log group, an IAM Role for Execution (with
@@ -136,7 +138,7 @@ policy is included.
 
 
 An execution role is synthesized based on the `Secrets` parameter and is not
-otherwise currently configurable.
+otherwise configurable.
 
 
 Using a CloudFormation macro allows passing the list of secrets and environment
@@ -153,7 +155,7 @@ Ruby2:
   Type: Buildkite::ECS::TaskDefinition
   Properties:
     Image: ruby:2.7
-    BuildkiteAgentImage: keithduncan/buildkite-sidecar:3
+    BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
     TaskCpu: 1024
     TaskMemory: 2048
 ```
@@ -215,8 +217,8 @@ build an image from a Dockerfile in a GitHub repository and stores the result in
 AWS ECR. This stack requires you to connect CodeBuild to GitHub using OAuth with
 an account that has access to the repositories you want to build. Alternatively,
 you can build open source repositories without authentication.
-- [`Kaniko`](examples/kaniko/builder.yml): creates an ECR repository and a task role with
-permission to push to this repository. This stack works in conjunction with the
-[`examples/kaniko/kaniko.yml`](examples/kaniko/kaniko.yml) stack to build images
-using an on-demand Buildkite Agent task definition. See the
-[kaniko documentation](examples/kaniko) for more details on this stack.
+- [`Kaniko`](examples/kaniko/kaniko.yml): creates an ECS Task Definition that
+uses the [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/kaniko)
+project to build Docker images in userspace without access to a Docker daemon.
+This stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
+stack to provide somewhere to store the built images. See the [kaniko stack documentation](examples/kaniko) for more details.
