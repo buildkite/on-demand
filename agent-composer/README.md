@@ -11,6 +11,10 @@ Task Role to permit access to any AWS services you require. Task Definitions
 don’t have to map 1:1 with Task Roles, you can schedule a Task Definition for
 different pipelines or steps and override the Task Role for each.
 
+See the [patterns section](#patterns) for documentation on the individual
+patterns that make up agent-composer, or skip ahead to [deploying](#deploying)
+to start building task definitions for on-demand pipelines.
+
 
 # Patterns
 
@@ -229,3 +233,6 @@ uses the [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/ka
 project to build Docker images in userspace without access to a Docker daemon.
 This stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
 stack to provide somewhere to store the built images. See the [kaniko stack documentation](examples/kaniko) for more details.
+
+
+# Deploying
