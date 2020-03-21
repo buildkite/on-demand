@@ -246,31 +246,6 @@ Resources:
         - '/aws/lambda/${LambdaName}'
         - LambdaName: !Ref BuildkiteScheduleTask
 
-  ECSTaskExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: ['sts:AssumeRole']
-      Path: /BuildkiteTaskExecution/
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-      Policies:
-        - PolicyName: FetchDecryptSSMBuildkiteToken
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ssm:GetParameter'
-                  - 'ssm:GetParameters'
-                  - 'kms:Decrypt'
-                Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token'
-                  - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm'
-
   BuildkiteEventsLog:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -297,45 +272,7 @@ Resources:
       Type: String
       Value: !Ref BuildkiteAgentToken
 
-  BuildkiteAgentLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /aws/ecs/buildkite
-      RetentionInDays: 1
-
-  BuildkiteAgentTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      ContainerDefinitions:
-        - Name: agent
-          Command:
-            - buildkite-agent
-            - start
-          Essential: true
-          Image: buildkite/agent:3
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region: !Ref AWS::Region
-              awslogs-group: /aws/ecs/buildkite
-              awslogs-stream-prefix: ecs
-          Secrets:
-            - Name: BUILDKITE_AGENT_TOKEN
-              ValueFrom: /buildkite/agent-token
-      Cpu: 256
-      Memory: 512
-      Family: buildkite
-      NetworkMode: awsvpc
-      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
-      RequiresCompatibilities:
-        - FARGATE
-
 Outputs:
-  ECSTaskExecutionRole:
-    Description: The ECS Task Execution role the runner lambda is permitted to pass to tasks.
-    Value: !GetAtt ECSTaskExecutionRole.Arn
-    Export:
-      Name: !Sub ${AWS::StackName}-ECSTaskExecutionRoleArn
   BuildkiteAgentTokenParameterPath:
     Description: The Systems Manager Parameter Store path that the Buildkite Agent Registration token is stored in.
     Value: /buildkite/agent-token
