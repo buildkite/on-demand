@@ -17,11 +17,12 @@ and prevents tracking an official image from Docker Hub without modification.
 the Buildkite Agent into an existing image, reducing the need to build your own
 Docker images.
 
-It is also possible to combine Agent Injection with your own images hosted on
-ECR, Artifactory or private Docker Hub repositories, anywhere you can configure
-ECS to pull an image from. See [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
-for documentation on how to easily build a a GitHub repository with a Dockerfile
-into an image for your task definitions.
+It is also possible to combine Agent Injection with your own purpose built
+images hosted on ECR, Artifactory or private Docker Hub repositories, anywhere
+you can configure ECS to pull an image from. See
+[Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
+for documentation on how to easily build a GitHub repository with a Dockerfile
+into an image for use in your task definitions.
 
 | Image Source | Agent Included? | Can Inject Agent? |
 | --- | --- | --- |
