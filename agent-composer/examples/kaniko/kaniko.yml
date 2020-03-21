@@ -51,14 +51,6 @@ Resources:
       LogGroupName: !Sub /aws/ecs/kaniko
       RetentionInDays: 1
 
-  BuildKanikoSocat:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: agent/build/codebuild.yml
-      Parameters:
-        SourceRepository: keithduncan/kaniko-socat
-        RepositoryName: sidecar/kaniko
-
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -164,7 +156,7 @@ Resources:
               awslogs-group: !Sub /aws/ecs/kaniko
               awslogs-stream-prefix: ecs
         - Name: kaniko
-          Image: !GetAtt BuildKanikoSocat.Outputs.Image
+          Image: keithduncan/kaniko-socat
           Command:
             # - -d
             # - -d
