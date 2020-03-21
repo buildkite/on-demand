@@ -156,7 +156,7 @@ The Lambda for this transform and the associated `AWS::CloudFormation::Macro`
 must be deployed first if you intend to use its functionality.
 
 
-### Simple `Buildkite::ECS::TaskDefinition` Example
+#### Simple `Buildkite::ECS::TaskDefinition` Example
 
 ```yaml
 Ruby2:
@@ -180,7 +180,7 @@ repositories.
 There are no secrets or environment variables included.
 
 
-### Complex `Buildkite::ECS::TaskDefinition` Example
+#### Complex `Buildkite::ECS::TaskDefinition` Example
 
 ```yaml
 CargoPublish:
