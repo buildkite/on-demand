@@ -88,7 +88,12 @@ exports.handler = async (event) => {
                     // Secret is Object with Name, ValueFrom
 
                     ssmParameters.push({
-                        "Fn::Sub": `arn:aws:ssm:\${AWS::Region}:\${AWS::AccountId}:parameter${secret['ValueFrom']}`,
+                        "Fn::Sub": [
+                            'arn:aws:ssm:\${AWS::Region}:\${AWS::AccountId}:parameter${ValueFrom}',
+                            {
+                                ValueFrom: secret['ValueFrom'],
+                            }
+                        ]
                     })
                 }
             }
