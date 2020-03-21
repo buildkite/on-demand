@@ -8,16 +8,29 @@ Parameters:
     Description: base image the Buildkite Agent will be injected in to, requires socat or another tool to communicate with the kaniko daemon.
   BuildkiteAgentImage:
     Type: String
-    Description: The injectable buildkite agent image to add as a sidecar container.
+    Description: The buildkite/agent:inject image to add as a sidecar container.
     # AllowedPattern: "^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*((\:[\\w\\-_\.]+)|(@[\\w\\-_]+:\\w+)){0,1}$"
     ConstraintDescription: |
       must be a Docker image reference e.g. node:12, buildkite/agent:latest, 012345678910.dkr.ecr.us-east-1.amazonaws.com/agent/buildkite:latest, quay.io/organization/image, keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
+  BuildkiteAgentTokenParameterPath:
+    Type: AWS::SSM::Parameter::Name
+    Description: An AWS SSM Parameter path where the buildkite agent token is stored.
   SshAgentBackend:
     Type: String
     Description: API Gateway Stage ARN for your `iam-ssh-agent` backend. If specified, an `ssh-agent` sidecar container will be included.
     Default: ''
     # AllowedPattern: "^$|^arn:aws[a-zA-Z-]*:execute-api:[a-z0-9\\-]+:\\d{12}:\\w+\\/\\w+$"
     ConstraintDescription: must be an API Gateway Stage ARN for your `iam-ssh-agent`
+  DockerConfigHubTokenParameterPath:
+    # Should be AWS::SSM::Parameter::Name but can't be optional
+    # Type: AWS::SSM::Parameter::Name
+    Type: String
+    Description: (Optional) An AWS SSM Parameter path to a Docker Hub token.
+    Default: ''
+  DockerConfigAwsRegistriesEcrHelper:
+    Type: CommaDelimitedList
+    Description: AWS AccountIds to include the ecr-login helper in the docker config.
+    Default: ''
   TaskRoleArn:
     Type: String
     Description: (Optional) The default task role for the ECS task.
@@ -26,6 +39,9 @@ Parameters:
 Conditions:
   IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
   CreateTaskRole: !Equals [ !Ref TaskRoleArn, '' ]
+
+  IncludeHubToken: !Not [ !Equals [ !Ref DockerConfigHubTokenParameterPath, '' ] ]
+  IncludeEcrLogin: !Not [ !Equals [ !Join [ ',', !Ref DockerConfigAwsRegistriesEcrHelper ], '' ] ]
 
 Resources:
   LogGroup:
@@ -38,7 +54,7 @@ Resources:
   BuildKanikoSocat:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ../builder/codebuild.yml
+      TemplateURL: agent/build/codebuild.yml
       Parameters:
         SourceRepository: keithduncan/kaniko-socat
         RepositoryName: sidecar/kaniko
@@ -187,10 +203,23 @@ Resources:
           Command:
             # Write /docker/config.json
             - !Sub |
-                jq -n '{"auths":{"https://index.docker.io/v1/":{"auth":env.DOCKER_TOKEN|@base64}},"credHelpers":{"${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com":"ecr-login"}}' >/docker/config.json; echo container=login-init at=initalised
+                config='{}';
+                if [ -n "$DOCKER_TOKEN" ]; then config="$(echo "$config" | jq '.auths = { "https://index.docker.io/v1/": { "auth": env.DOCKER_TOKEN|@base64 } }')"; fi;
+                if [ -n "$AWS_REGISTRIES" ]; then for registry in ${!AWS_REGISTRIES//,/ }; do config="$(echo "$config" | jq --arg registry $registry '.credHelpers."\($registry)" = "ecr-login"')"; done; fi;
+                echo "$config" >/docker/config.json;
+                echo container=login-init at=initalised;
           Secrets:
-            - Name: DOCKER_TOKEN
-              ValueFrom: /hub.docker.com/keithduncan/token
+            - !If
+                - IncludeHubToken
+                - Name: DOCKER_TOKEN
+                  ValueFrom: !Ref DockerConfigHubTokenParameterPath
+                - !Ref AWS::NoValue
+          Environment:
+            - !If
+                - IncludeEcrLogin
+                - Name: AWS_REGISTRIES
+                  Value: !Join [ ',', !Ref DockerConfigAwsRegistriesEcrHelper ]
+                - !Ref AWS::NoValue
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -242,8 +271,11 @@ Resources:
                   - 'ssm:GetParameter'
                   - 'ssm:GetParameters'
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token'
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/hub.docker.com/keithduncan/token'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BuildkiteAgentTokenParameterPath}'
+                  - !If
+                      - IncludeHubToken
+                      - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DockerConfigHubTokenParameterPath}'
+                      - !Ref AWS::NoValue
               - Effect: Allow
                 Action: kms:Decrypt
                 Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
