@@ -16,35 +16,50 @@ The template defines several AWS resources:
 - A CloudFormation Macro
 - A CloudWatch Log group for the CloudWatch Macro
 
-## Deploy the application
+## Deploying
 
-The CloudFormation Macro resources can be deployed using the Serverless
-Application Repository or the SAM CLI.
+The CloudFormation Macro can be deployed using the AWS Console Serverless
+Application Repository or the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-reference.html#serverless-sam-cli).
+
+Macros can only be used from the same account they are deployed to. Ensure you
+deploy the macro to the account and regions you plan to deploy your Buildkite
+ECS Task Definitions in.
+
+### Deploy using the AWS Serverless Application Repository web console
 
 [![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
-To deploy using the SAM CLI, you need the following tools:
+Open the application in AWS Console and click Deploy, fill in the parameters
+as described below for a CLI deployment.
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+### Deploy using the AWS Serverless Application Model on the command line
 
-To build and deploy the application for the first time, run the following in
-your shell:
+First, [install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+if not already installed. The following instructions were written using SAM
+version 0.46.2.
+
+To deploy the macro for the first time, authenticate with AWS and run the
+following command from this directory:
 
 ```bash
 sam deploy --guided
 ```
 
-This command will build the application package and deploy your application to
-your AWS account. Ensure you are authenticate to the same account you plan to
-use the macro from. You will be presented with a series of prompts:
+You will be prompted for the following parameter values:
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should
-be unique to your account and region, and a good starting point would be
-something like buildkite-on-demand-macro.
-* **AWS Region**: The AWS region you want to deploy your app to inside your
-account.
+* **Stack Name**: The name of the stack to deploy to CloudFormation. This must
+be unique to your account and region, use something descriptive like
+`buildkite-on-demand-macro`.
+* **AWS Region**: The AWS region you want to deploy the macro to inside your
+account. Deploy the transform to all regions you plan to deploy Buildkite ECS
+Task Definitions to.
+* **Parameter TransformName**: The transform name is how you will invoke the
+transform using the [CloudFormation Transform](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html)
+section in your agent template. You should use the default transform name unless
+you are developing a fork of the transform.
 * **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modified IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
+* **Allow SAM CLI IAM role creation**: IAM role creation is not required but
+passing no prompts you for Capabilities which doesn't support a blank value 🤷
 * **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
 
 ## Use the SAM CLI to build and test locally
