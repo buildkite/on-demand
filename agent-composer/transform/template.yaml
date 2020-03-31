@@ -36,11 +36,11 @@ Resources:
     Properties:
       Description: A CloudFormation macro to transform Buildkite::ECS::TaskDefinition resources.
       FunctionName: !Ref TransformFunction
-      LogGroupName: /aws/cloudformation/buildkite-agent-macro
+      LogGroupName: !Sub /aws/cloudformation/${TransformName}
       Name: !Ref TransformName
   TransformLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: Transform
     Properties:
       RetentionInDays: 1
-      LogGroupName: /aws/cloudformation/buildkite-on-demand-transform
+      LogGroupName: !Sub /aws/cloudformation/${TransformName}
