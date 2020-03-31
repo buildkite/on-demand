@@ -21,7 +21,7 @@ The template defines several AWS resources:
 The CloudFormation Macro resources can be deployed using the Serverless
 Application Repository or the SAM CLI.
 
-
+[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
 To deploy using the SAM CLI, you need the following tools:
 
