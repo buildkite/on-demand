@@ -42,7 +42,7 @@ To deploy the macro for the first time, authenticate with AWS and run the
 following command from this directory:
 
 ```bash
-sam deploy --guided
+transform$ sam deploy --guided
 ```
 
 You will be prompted for the following parameter values:
@@ -67,35 +67,20 @@ passing no prompts you for Capabilities which doesn't support a blank value 🤷
 Build your application with the `sam build` command.
 
 ```bash
-buildkite-on-demand-transform$ sam build
+transform$ sam build
 ```
 
-The SAM CLI installs dependencies defined in `hello-world/package.json`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+The SAM CLI installs dependencies defined in `src/package.json`, creates a
+deployment package, and saves it in the `.aws-sam/build` folder.
 
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
+Test a single function by invoking it directly with a test event. An event is a
+JSON document that represents the input that the function receives from the
+event source. Test events are included in the `events` folder in this project.
 
 Run functions locally and invoke them with the `sam local invoke` command.
 
 ```bash
-buildkite-on-demand-transform$ sam local invoke HelloWorldFunction --event events/event.json
-```
-
-The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
-
-```bash
-buildkite-on-demand-transform$ sam local start-api
-buildkite-on-demand-transform$ curl http://localhost:3000/
-```
-
-The SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
-
-```yaml
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
+transform$ sam local invoke TransformFunction --event events/event.json
 ```
 
 ## Fetch, tail, and filter Lambda function logs
@@ -105,27 +90,29 @@ To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs`
 `NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
 
 ```bash
-buildkite-on-demand-transform$ sam logs -n HelloWorldFunction --stack-name buildkite-on-demand-transform --tail
+transform$ sam logs -n HelloWorldFunction --stack-name buildkite-on-demand-transform --tail
 ```
 
 You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
 
 ## Unit tests
 
-Tests are defined in the `hello-world/tests` folder in this project. Use NPM to install the [Mocha test framework](https://mochajs.org/) and run unit tests.
+Tests are defined in the `src/tests` folder in this project. Use NPM to install
+the [Mocha test framework](https://mochajs.org/) and run unit tests.
 
 ```bash
-buildkite-on-demand-transform$ cd hello-world
-hello-world$ npm install
-hello-world$ npm run test
+transform$ cd src
+src$ npm install
+src$ npm run test
 ```
 
 ## Cleanup
 
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
+To delete the sample application that you created, use the AWS CLI. Assuming you
+used the suggested stack name, you can run the following:
 
 ```bash
-aws cloudformation delete-stack --stack-name buildkite-on-demand-transform
+aws cloudformation delete-stack --stack-name buildkite-on-demand-macro
 ```
 
 ## Resources
