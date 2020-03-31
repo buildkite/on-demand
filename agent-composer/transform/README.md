@@ -14,7 +14,7 @@ The template defines several AWS resources:
 - A Lambda function
 - A CloudWatch Log group for the Lambda Function
 - A CloudFormation Macro
-- A CloudWatch Log group for the CloudWatch Macro
+- A CloudWatch Log group for the CloudFormation Macro
 
 ## Deploying
 
