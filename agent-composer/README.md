@@ -78,12 +78,11 @@ Adding the agent sidecar to your task definition can be handled by the
 Adding an `iam-ssh-agent` container to your task definition allows your
 Buildkite agents to clone private repositories using git+ssh without granting
 the container access to the raw key material. The private keys are securely kept
-behind a service interface that offers `list-keys` and `sign data` operations, a
-bit like a network attached hardware security module.
+behind a service interface that offers `list-keys` and `sign data` operations,
+similar to a network attached hardware security module.
 
 To deploy an `iam-ssh-agent` backend, see the
 [`iam-ssh-agent` project documentation](http://github.com/keithduncan/iam-ssh-agent).
-
 Once you have an `iam-ssh-agent` backend, you can add the client to your task
 definitions:
 
@@ -106,8 +105,8 @@ Adding the `iam-ssh-agent` sidecar to your task definition can be handled by the
 ## Buildkite Agent CloudFormation Macro
 
 The [`transform`](transform) directory contains an AWS SAM project that deploys
-a CloudFormation Transform Macro to simplify creating the
-`AWS::ECS::TaskDefinition` resources for your agents and reduces duplication.
+a CloudFormation Macro to simplify creating the `AWS::ECS::TaskDefinition`
+resources for your agents and reduces duplication.
 
 To use the CloudFormation Macro, deploy it to your continuous integration AWS
 Account using the AWS Serverless Application Repository:
@@ -115,9 +114,12 @@ Account using the AWS Serverless Application Repository:
 [![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
 The macro expands any `Type: Buildkite::ECS::TaskDefinition` CloudFormation
-resources in your template into: an ECS task definition, a log group, an ECS
-Task Execution Role (with access to the given SSM secrets), and a Task Role for
-the Task (with access to the given `iam-ssh-agent` backend).
+resources in your template into:
+
+- an ECS task definition
+- a CloudWatch log group
+- an ECS Task Execution Role (with access to the given SSM secrets)
+- a Task Role (with access to the given `iam-ssh-agent` backend)
 
 The following resource parameters are supported:
 
@@ -238,17 +240,17 @@ repurpose:
 
 - [`CodeBuild`](examples/codebuild/codebuild.yml): creates an AWS CodeBuild
 Project to build an image from a Dockerfile in a GitHub repository, and stores
-the result in AWS ECR. This stack requires you to connect CodeBuild to GitHub
-using OAuth ahead of time. Use an account that has read access to the
+the result in AWS ECR repository. This stack requires you to connect CodeBuild
+to GitHub using OAuth ahead of time. Use an account that has read access to the
 repositories you want to build. Consider creating a machine user in your GitHub
 organisation for this. Alternatively, you can build open source repositories
 without authentication.
 - [`Kaniko`](examples/kaniko/kaniko.yml): creates an ECS Task Definition that
 can be scheduled by agent-scheduler. The task definition uses [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/kaniko)
 to allow building Docker images without access to a Docker daemon, making it
-suitable for use on AWS ECS and Fargate. This allows you to use Buildkite
-Pipelines to build Docker images instead of a CodeBuild Project. The Kaniko
-stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
+suitable for use on AWS ECS and Fargate. This task definition allows you to use
+Buildkite Pipelines to build Docker images instead of a CodeBuild Project. The
+Kaniko stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
 stack to provide somewhere to store the built images. See the
 [kaniko stack documentation](examples/kaniko) for more details.
 
@@ -281,11 +283,11 @@ Resources: {}
 ```
 
 You can choose how to deploy this template to your infrastructure. For solo
-developers, you can use either the AWS CLI or AWS SAM CLI, consider using
-something like [aws-vault](https://github.com/99designs/aws-vault) to store your
+developers, you can use the AWS CLI or AWS SAM CLI. Consider using something
+like [aws-vault](https://github.com/99designs/aws-vault) to store your
 AWS Account credentials securely. For teams, consider using a Buildkite Pipeline
-and IAM Role with permission to deploy the CloudFormation template for
-continuous deployment of your infrastructure.
+and IAM Role with permission to deploy the CloudFormation template for shared
+and continuous deployment of your infrastructure.
 
 ### AWS CLI
 
@@ -308,9 +310,10 @@ The following examples show you how to:
 
 ## Default Task Definition
 
-`agent-scheduler` defaults to a `buildkite` task definition if the pipeline
-steps don’t include a `task-definition` in the agent query rules. Add a default
-task definition to your CloudFormation template like this:
+`agent-scheduler` [defaults](https://github.com/keithduncan/buildkite-on-demand/blob/master/agent-scheduler/src/handlers/buildkite-run-task.js)
+to a task definition called `buildkite` if pipeline steps don’t specify a
+`task-definition` in the agent query rules. Add a default task definition to
+your CloudFormation template like this:
 
 ```yaml
 AWSTemplateFormatVersion: 2010-09-09
@@ -400,10 +403,9 @@ schema for the test environment and then run tests.
 
 ## Building Docker Images
 
-To build Docker images using the [kaniko](examples/kaniko) task definition, you
-can include the kaniko sub-stack in your template. You can use this task
-definition to build general purpose docker images or even additional base images
-for use in your Buildkite on-demand infrastructure.
+To build Docker images, include the kaniko sub-stack in your template. You can
+use the kaniko task definition to build general purpose docker images or even
+additional base images for use in your Buildkite on-demand infrastructure.
 
 ```yaml
 Resources:
@@ -426,8 +428,8 @@ with the kaniko sidecar container.
 This instantiation of the kaniko stack configures kaniko to use `ecr-login` when
 pushing images to the AWS Elastic Container Registry for this account.
 N.B. while the Docker configuration will use `ecr-login` to authenticate to ECR,
-you must use a task role with permission to push to the ECR repository you want
-to use, otherwise the image push will fail.
+you must schedule this task definition with a task role with permission to push
+to the ECR repository you want to use, otherwise the image push will fail.
 
 To give your Buildkite Pipeline somewhere to push and store an image,
 instantiate a copy of the kaniko builder stack. This sub-stack creates an ECR
@@ -463,9 +465,10 @@ steps:
       task-role: BuildExampleImage
 ```
 
-This pipeline uses the kaniko task definition, and the `BuildExampleImage` task
-role to build and push an image to an ECR repository. You should instantiate as
-many `example/kaniko/builder.yml` stacks as you need to store images.
+This pipeline uses the kaniko stack's task definition, and the kaniko builder
+stack's `BuildExampleImage` task role to build and push to the ECR repository
+that was created. You should instantiate as many `example/kaniko/builder.yml`
+stacks as you need to store images.
 
 ## Cloning Private Repositories
 
@@ -474,14 +477,13 @@ Unlike the Buildkite Elastic CI Stack, there is no support for copying
 private keys to the on-demand agents. Instead, Buildkite on-demand uses role
 based access to an [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent)
 backend which uses the caller's IAM identity to provide signatures for
-pre-selected ssh keys.
+pre-approved ssh keys.
 
 See the the [`iam-ssh-agent` deployment documentation](https://github.com/keithduncan/iam-ssh-agent/tree/master/service#deploying)
 for details on how to deploy a copy of this serverless application to your AWS
-Organization.
-
-Once you have deployed the service, and [added your private keys](https://github.com/keithduncan/iam-ssh-agent/#adding-keys), you can create a task role in your on-demand
-account and [grant it access](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-keys)
+Organization. Once you have deployed the service, and [added your private keys](https://github.com/keithduncan/iam-ssh-agent/#adding-keys), you can create a task role in your
+on-demand account and
+[grant it access](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-keys)
 to an ssh key.
 
 To add the `iam-ssh-agent` sidecar to your task definition you add the
@@ -503,9 +505,9 @@ Adding the `iam-ssh-agent` sidecar to the Ruby task definition would like this:
 
 `Buildkite::ECS::TaskDefinition` resources automatically create a task role with
 permission to access the `SshAgentBackend` if given. You can choose to give this
-default role permission to access the ssh keys, or create a new role that has
-access. A task definition can be scheduled with different roles and can be
-reused between projects including between open or closed source.
-
-If you choose to create a non-default role, ensure you include an IAM Policy to
+default role permission to access the ssh keys, or create a new non-default role
+that has access. A task definition can be scheduled with different roles using
+the `task-role` agent query rule allowing a task definition be reused between
+projects including between open and closed source. If you choose to use a
+non-default role, ensure you include an IAM Policy to
 [grant access to the API Gateway](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-the-api-gateway).
