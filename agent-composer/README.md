@@ -264,7 +264,7 @@ a [template transform](https://docs.aws.amazon.com/AWSCloudFormation/latest/User
 to your AWS Account before following the examples.
 
 To start adding task definitions, create a new source code repository for your
-infrastructure and create a `template.yml` file that looks like this:
+on-demand infrastructure and create a `template.yml` file that looks like this:
 
 ```yaml
 AWSTemplateFormatVersion: 2010-09-09
@@ -372,7 +372,7 @@ schema for the test environment and then run tests.
 ## Docker Builder Task Definition
 
 To build Docker images using the [kaniko](examples/kaniko) task definition, you
-can include kaniko sub-stack:
+can include the kaniko sub-stack:
 
 ```yaml
 Resources:

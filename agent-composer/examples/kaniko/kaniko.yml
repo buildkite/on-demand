@@ -27,7 +27,8 @@ Parameters:
     # Should be AWS::SSM::Parameter::Name but can't be optional
     # Type: AWS::SSM::Parameter::Name
     Type: String
-    Description: Optional, an AWS SSM Parameter path to a Docker Hub token.
+    Description: Optional, an AWS SSM Parameter path to Docker Hub credentials. The parameter should store a string
+in the format `username:token` e.g. `keithduncan:1234EXAMPLE`.
     Default: ''
   DockerConfigAwsRegistriesEcrHelper:
     Type: CommaDelimitedList
