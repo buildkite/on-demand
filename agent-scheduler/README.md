@@ -8,9 +8,9 @@ Agents on-demand with AWS Elastic Container Service, in response to builds.
 
 ## Set-up Instructions
 
-Before deploying this serverless application to your AWS account, you need to
-configure the Amazon EventBridge integration between your Buildkite and AWS
-accounts. See the [Buildkite Documentation](https://buildkite.com/docs/integrations/amazon-eventbridge)
+Before deploying this serverless application to your AWS account, configure the
+Amazon EventBridge integration between your Buildkite and AWS accounts. See the
+[Buildkite Documentation](https://buildkite.com/docs/integrations/amazon-eventbridge)
 for how to do this.
 
 It is best practice to run your continuous integration in a separate AWS
