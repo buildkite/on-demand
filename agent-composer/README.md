@@ -256,13 +256,15 @@ stack to provide somewhere to store the built images. See the
 # Deploying Task Definitions
 
 Deploying your task definitions is best done as part of a CloudFormation
-template. That ensures the task family names, CPU and memory requirements are
-all saved in a repeatable fashion.
+template. This ensures that the task family names, CPU and memory requirements
+are all written down and deployable in a repeatable fashion. You can split your
+task definitions across multiple CloudFormation templates but consider that task
+definition names must be unique per account per region.
 
 The following examples use the
 [Buildkite Agent CloudFormation Macro](#buildkite-agent-cloudformation-macro) as
 a [template transform](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html). [Deploy the CloudFormation Macro](transform/README.md#deploying)
-to your AWS Account before following the examples.
+to your AWS Account before using these examples.
 
 To start adding task definitions, create a new source code repository for your
 on-demand infrastructure and create a `template.yml` file that looks like this:
@@ -276,6 +278,24 @@ Transform:
 - Buildkite-Agents-2020-03-21
 
 Resources: {}
+```
+
+You can choose how to deploy this template to your infrastructure. For solo
+developers, the AWS CLI or AWS SAM CLI are both good choices with
+[aws-vault](https://github.com/99designs/aws-vault) to store AWS Account
+credentials. For teams which share the on-demand infrastructure, consider using
+a Buildkite Pipeline for continuous deployment of the infrastructure.
+
+### AWS CLI
+
+```bash
+template$ aws cloudformation deploy --template-file template.yml --stack-name agent-composer
+```
+
+### AWS SAM
+
+```bash
+template$ sam deploy --template-file template.yml --stack-name agent-composer
 ```
 
 ## Default Task Definition
