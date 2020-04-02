@@ -25,13 +25,13 @@ from Docker Hub or elsewhere without modification.
 [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent) sidecar
 container to your task definition to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
-container access to the raw key material.
-- [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkite-agent-cloudformation-macro):
+agent container access to the raw key material.
+- [Buildkite Agent CloudFormation Macro](#buildkite-agent-cloudformation-macro):
 a Lambda based CloudFormation Macro you can deploy to your account make writing
 Buildkite Agent ECS Task Definitions simple.
 - [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks):
 drop in CloudFormation substacks to configure resources for building and storing
-Docker images on ECR.
+Docker images in ECR.
 
 
 ## Buildkite Agent Sidecar
