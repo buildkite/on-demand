@@ -26,7 +26,7 @@ from Docker Hub or elsewhere without modification.
 container to your task definition to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
 container access to the raw key material.
-- [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro):
+- [`Buildkite::ECS::TaskDefinition` CloudFormation Macro](#buildkite-agent-cloudformation-macro):
 a Lambda based CloudFormation Macro you can deploy to your account make writing
 Buildkite Agent ECS Task Definitions simple.
 - [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks):
@@ -68,7 +68,7 @@ which auto-updates when the base image changes, though it is also possible to
 build your own. The source for this image is hosted on
 [GitHub](https://github.com/keithduncan/buildkite-sidecar).
 
-Adding the agent sidecar to your task definition can be handled by the [CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro).
+Adding the agent sidecar to your task definition can be handled by the [CloudFormation Macro](#buildkite-agent-cloudformation-macro).
 
 
 ## `iam-ssh-agent` Sidecar
@@ -98,10 +98,10 @@ service.
 A full example can be seen in [`examples/ssh.yml`](examples/ssh.yml).
 
 Adding the `iam-ssh-agent` sidecar to your task definition can be handled by the
-[CloudFormation Macro](#buildkiteecstaskdefinition-cloudformation-macro).
+[CloudFormation Macro](#buildkite-agent-cloudformation-macro).
 
 
-## `Buildkite::ECS::TaskDefinition` CloudFormation Macro
+## Buildkite Agent CloudFormation Macro
 
 The [`transform`](transform) directory contains an AWS SAM project that deploys
 a CloudFormation Transform Macro to simplify creating the
