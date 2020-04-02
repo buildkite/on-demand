@@ -440,3 +440,46 @@ This pipeline uses the kaniko task definition, and the `BuildImage` task role
 to build and push an image to an ECR repository.
 
 You should instantiate as many `example/kaniko/builder.yml` stacks as you need.
+
+## Cloning Private Repositories
+
+All the examples so far have used public repositories with no authentication.
+Unlike the Buildkite Elastic CI Stack, there is no support for copying
+private keys to the on-demand agents. Instead, Buildkite on-demand uses role
+based access to an [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent)
+backend which uses the caller's IAM identity to provide signatures for
+pre-selected ssh keys.
+
+See the the [`iam-ssh-agent` deployment documentation](https://github.com/keithduncan/iam-ssh-agent/tree/master/service#deploying)
+for details on how to deploy a copy of this serverless application to your AWS
+Organization.
+
+Once you have deployed the service, and [added your private keys](https://github.com/keithduncan/iam-ssh-agent/#adding-keys), you can create a task role in your on-demand
+account and [grant it access](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-keys)
+to an ssh key.
+
+To add the `iam-ssh-agent` sidecar to your task definition you add the
+`SshAgentBackend` parameter to a `Buildkite::ECS::TaskDefinition` resource.
+Adding the `iam-ssh-agent` sidecar to the Ruby task definition would like this:
+
+```diff
+ Resources:
+   Ruby2:
+     Type: Buildkite::ECS::TaskDefinition
+     Properties:
+       Image: ruby:2.7.0
+       BuildkiteAgentImage: keithduncan/buildkite-sidecar
++      SshAgentBackend: arn:aws:execute-api:us-east-1:12345EXAMPLE:zEXAMPLE12/Prod
+       TaskFamily: ruby2
+       TaskCpu: 1024
+       TaskMemory: 2048
+```
+
+`Buildkite::ECS::TaskDefinition` resources automatically create a task role with
+permission to access the `SshAgentBackend` if given. You can choose to give this
+default role permission to access the ssh keys, or create a new role that has
+access. A task definition can be scheduled with different roles and can be
+reused between projects including between open or closed source.
+
+If you choose to create a non-default role, ensure you include an IAM Policy to
+[grant access to the API Gateway](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-the-api-gateway).
