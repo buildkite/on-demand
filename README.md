@@ -14,9 +14,9 @@ response to builds.
 ## Getting Started
 
 First, [deploy the agent-scheduler](agent-scheduler) to an AWS account dedicated
-to your continuous integration workload. Once agent-scheduler has been deployed,
-[configure task definitions using agent-composer](agent-composer) for the agents
-you want to run.
+to your continuous integration workload. Then, once agent-scheduler has been
+deployed, [deploy task definitions using agent-composer](agent-composer) for the
+agents you want to run.
 
 ## agent-scheduler
 
