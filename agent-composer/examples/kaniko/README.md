@@ -31,9 +31,9 @@ definition. If absent, one will be generated with access to the given
 The `kaniko` task definition comprises these containers:
 
 - `agent`
-	- The injected Buildkite Agent will execute in this container.
-	- Must include `socat` on `$PATH` to connect to the `kaniko` container along
-	with any other tools your pipeline step needs.
+	- The Buildkite Agent will execute in this container.
+	- The image for this container must include `socat` on `$PATH` to connect to
+	the `kaniko` container along with any other tools your pipeline step needs.
 	- Executes a `buildkite-agent` to acquire a Buildkite Job.
 	- Shares a volume with:
 		- `agent-init` to inject the `buildkite-agent` binary at `/buildkite`

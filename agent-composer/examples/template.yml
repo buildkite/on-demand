@@ -62,7 +62,7 @@ Resources:
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: buildkite
 
-  # Stock Ruby 2.7 image with injected agent.
+  # Stock Ruby 2.7 image with agent sidecar.
   Ruby2:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
@@ -71,7 +71,7 @@ Resources:
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: ruby2
 
-  # Stock terraform image with injected agent.
+  # Stock terraform image with agent sidecar.
   #
   # Should be coupled with task roles that can perform terraform plan and apply
   # in your accounts.
