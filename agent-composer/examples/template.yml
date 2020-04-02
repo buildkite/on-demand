@@ -62,11 +62,11 @@ Resources:
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: buildkite
 
-  # Stock Ruby 2.7 image with agent sidecar.
+  # Stock Ruby 2.7.0 image with agent sidecar.
   Ruby2:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
-      Image: ruby:2.7
+      Image: ruby:2.7.0
       BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: ruby2
