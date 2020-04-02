@@ -8,7 +8,7 @@ The goal is produce an ECS Task Definition for each Buildkite Pipeline or
 Pipeline Step. Each task definition needs a Docker image containing the tools
 you use to perform continuous integration or deployment, and optionally an IAM
 Task Role to permit access to any AWS services you require. Task Definitions
-don’t have to map 1:1 with Task Roles, you can schedule a Task Definition for
+don’t have to map 1:1 with Task Roles, you can share a Task Definition between
 different pipelines or steps and override the Task Role for each.
 
 See the [patterns section](#patterns) for documentation on the individual
@@ -223,24 +223,29 @@ definition's ECS Execution Role.
 
 ## Image Builder CloudFormation Stacks
 
-If you cannot compose a task definition from stock Docker Hub images using
-[agent injection](#buildkite-agent-injection), you can build an image instead.
+If you cannot compose a task definition from stock Docker Hub images and
+[agent injection](#buildkite-agent-injection), you can build your own base
+image. These approaches are not mutually exclusive, you can still use agent
+injection with your own base images.
 
-These approaches are not mutually exclusive, you can still use agent injection
-with your own base images.
-
-There are two image builder stack examples:
+You can build your own base images using whatever technology or stack you
+choose, so long as the resulting image can be fetched by your ECS Cluster.
+`agent-composer` includes two example image builder stacks that you can use or
+repurpose:
 
 - [`CodeBuild`](examples/codebuild/codebuild.yml): creates an AWS CodeBuild
-Project to build an image from a Dockerfile in a GitHub repository and stores
+Project to build an image from a Dockerfile in a GitHub repository, and stores
 the result in AWS ECR. This stack requires you to connect CodeBuild to GitHub
-using OAuth with an account that has access to the repositories you want to
-build. Alternatively, you can build open source repositories without
-authentication.
+using OAuth ahead of time. Use an account that has read access to the
+repositories you want to build. Consider creating a machine user in your GitHub
+organisation for this. Alternatively, you can build open source repositories
+without authentication.
 - [`Kaniko`](examples/kaniko/kaniko.yml): creates an ECS Task Definition that
-uses the [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/kaniko)
-project to build Docker images without access to a Docker daemon.
-This stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
+can be scheduled by agent-scheduler. The task definition uses [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/kaniko)
+to allow building Docker images without access to a Docker daemon, making it
+suitable for use on AWS ECS and Fargate. This allows you to use Buildkite
+Pipelines to build Docker images instead of a CodeBuild Project. The Kaniko
+stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
 stack to provide somewhere to store the built images. See the
 [kaniko stack documentation](examples/kaniko) for more details.
 
