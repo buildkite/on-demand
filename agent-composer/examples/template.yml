@@ -138,7 +138,7 @@ Resources:
   Sam:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
-      Image: !GetAtt BuildSamAgent.Outputs.Image
+      Image: !GetAtt BuildSam.Outputs.Image
       BuildkiteAgentImage: keithduncan/buildkite-sidecar
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: sam
