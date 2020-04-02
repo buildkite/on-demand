@@ -18,7 +18,7 @@ to start building task definitions for on-demand pipelines.
 
 # Patterns
 
-- [Buildkite Agent Injection](#buildkite-agent-injection): use a Docker Volume
+- [Buildkite Agent Sidecar](#buildkite-agent-sidecar): use a Docker Volume
 to inject the Buildkite Agent into _any_ image, allowing the use of stock images
 from Docker Hub or elsewhere without modification.
 - [`iam-ssh-agent` Sidecar](#iam-ssh-agent-sidecar): add an
@@ -34,25 +34,26 @@ drop in CloudFormation substacks to configure resources for building and storing
 Docker images on ECR.
 
 
-## Buildkite Agent Injection
+## Buildkite Agent Sidecar
 
 Composing an upstream Docker image with the Buildkite Agent installed can be
 repetitive and prevents tracking an official image from Docker Hub without
-modification. Buildkite Agent Injection allows you to side load the Buildkite
-Agent into an existing image, reducing the need to build your own Docker images.
+modification. Adding the Buildkite Agent as a sidecar container allows you to
+side load the Buildkite Agent into an existing image, often replacing the need
+to build a specific Docker image.
 
-It is also possible to combine Agent Injection with your own purpose built
+It is also possible to combine an agent sidecar with your own purpose built
 images hosted on ECR, Artifactory or private Docker Hub repositories. See
 [Image Builder CloudFormation Stacks](#image-builder-cloudformation-stacks)
-for documentation on how to easily build a GitHub repository with a Dockerfile
-into an image for use in your task definitions.
+for documentation on how to build a GitHub repository with a Dockerfile into an
+image for use in your task definitions.
 
-| Image Source | Agent Included? | Can Inject Agent? |
+| Image Source | Agent Included? | Agent Sidecar Supported? |
 | --- | --- | --- |
-| Official Docker Hub | Typically, no | ✔︎ |
-| Purpose Built | If needed | ✔︎ |
+| Official Docker Hub | Unlikely | ✔︎ |
+| Purpose Built | Optionally | ✔︎ |
 
-Buildkite agent injection works by confining the Buildkite Agent binary,
+A Buildkite Agent sidecar works by confining the Buildkite Agent binary,
 configuration and other directories to a single directory; copying that
 directory into a `FROM scratch` image; and marking the final directory a
 `VOLUME`.
@@ -62,13 +63,13 @@ With that image in hand, it is possible to schedule a container which simply
 (or platform equivalent) to bring the `buildkite` volume in to another
 container. This is possible in both ECS Tasks and Kubernetes Pods.
 
-I have published an injectable agent to Docker Hub available at
-[`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar)
-which auto-updates when the base image changes, though it is also possible to
-build your own. The source for this image is hosted on
-[GitHub](https://github.com/keithduncan/buildkite-sidecar).
+A ready made agent sidecar image is available on Docker Hub
+[`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar),
+though it is also possible to build your own. The source for this image is
+available on [GitHub](https://github.com/keithduncan/buildkite-sidecar).
 
-Adding the agent sidecar to your task definition can be handled by the [CloudFormation Macro](#buildkite-agent-cloudformation-macro).
+Adding the agent sidecar to your task definition can be handled by the
+[CloudFormation Macro](#buildkite-agent-cloudformation-macro).
 
 
 ## `iam-ssh-agent` Sidecar
@@ -121,7 +122,7 @@ The following resource parameters are supported:
 
 - **Image**: the main image for your task definition, containing the software
 you need for command steps and plugins. The `buildkite-agent` is not required
-if using the `BuildkiteAgentImage` agent injection option.
+if using the `BuildkiteAgentImage` agent sidecar option.
 - **BuildkiteAgentImage**: Optional, an image with the injectable
 `buildkite-agent`. Should be a `FROM scratch` image that exposes a `/buildkite`
 volume. If absent, your main image must include a `buildkite-agent` binary on
@@ -223,10 +224,10 @@ definition's ECS Execution Role.
 
 ## Image Builder CloudFormation Stacks
 
-If you cannot compose a task definition from stock Docker Hub images and
-[agent injection](#buildkite-agent-injection), you can build your own base
-image. These approaches are not mutually exclusive, you can still use agent
-injection with your own base images.
+If you cannot compose a task definition from stock Docker Hub images and an
+[agent sidecar](#buildkite-agent-sidecar), you can build your own base
+image. Building your own base image and the agent sidecar are not mutually
+exclusive, you can still use an agent sidecar with your own base images.
 
 You can build your own base images using whatever technology or stack you
 choose, so long as the resulting image can be fetched by your ECS Cluster.

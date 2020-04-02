@@ -9,7 +9,7 @@ daemon.
 ## Template Parameters
 
 * **Image**: Main image, must include `socat`. See [keithduncan/buildkite-base](https://github.com/keithduncan/buildkite-base/blob/master/agent/Dockerfile) for an example.
-* **BuildkiteAgentImage**: Buildkite Agent injection image.
+* **BuildkiteAgentImage**: Buildkite Agent sidecar image.
 * **BuildkiteAgentTokenParameterPath**: The AWS SSM Parameter Store parameter
 path to a Buildkite Agent registration token.
 * **SshAgentBackend**: Optional, an `iam-ssh-agent` backend for use cloning
