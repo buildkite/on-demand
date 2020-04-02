@@ -372,14 +372,16 @@ schema for the test environment and then run tests.
 ## Docker Builder Task Definition
 
 To build Docker images using the [kaniko](examples/kaniko) task definition, you
-can include the kaniko sub-stack:
+can include the kaniko sub-stack. You can use this task definition to build
+general purpose docker images or even additional base images for use in your
+Buildkite on-demand infrastructure.
 
 ```yaml
 Resources:
   Kaniko:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: kaniko.yml
+      TemplateURL: examples/kaniko/kaniko.yml
       Parameters:
         Image: keithduncan/buildkite-base
         BuildkiteAgentImage: keithduncan/buildkite-sidecar
@@ -390,10 +392,51 @@ Resources:
             - [ !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" ]
 ```
 
+`keithduncan/buildkite-base` includes `socat` which is needed to communicate
+with the kaniko sidecar container.
+
 This instantiation of the kaniko stack uses a Docker Hub token stored in the AWS
 SSM Parameter Store and `ecr-login` to push to the repositories in this account.
 N.B. while the generated Docker configuration will use `ecr-login` to
 authenticate to ECR, you must use a task role with permission to push to the
 ECR repository you want to use.
 
+The kaniko builder stack creates an ECR and IAM Role with ECR push permission
+for your Buildkite Pipeline:
 
+```yaml
+Resources:
+  BuildImage:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: examples/kaniko/builder.yml
+      Parameters:
+        RepositoryName: my-ecr-repository
+        TaskRoleName: BuildImage
+```
+
+To create named roles that you can use in your Buildkite Pipeline, your
+CloudFormation stack will need `CAPABILITY_NAMED_IAM`.
+
+Now you combine these two stacks with a Buildkite Pipeline:
+
+```yaml
+agents:
+  queue: your-agent-scheduler-queue
+
+steps:
+  - label: ":docker: :kangaroo:"
+    plugins:
+      - "keithduncan/kanikoctl#261d24e5f25e01ba0ee8f2b406c5ff7c260d2cc5":
+          destination: 1234EXAMPLE.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repository
+          tags:
+            - latest
+    agents:
+      task-definition: kaniko
+      task-role: BuildImage
+```
+
+This pipeline uses the kaniko task definition, and the `BuildImage` task role
+to build and push an image to an ECR repository.
+
+You should instantiate as many `example/kaniko/builder.yml` stacks as you need.
