@@ -1,8 +1,8 @@
 # buildkite-on-demand-transform
 
 This project contains source code and supporting files for a CloudFormation
-Macro that you can deploy with the SAM CLI or from the Serverless Application
-Repository. It includes the following files and folders:
+Macro that you can deploy from the Serverless Application Repository or with the
+SAM CLI. It includes the following files and folders:
 
 - src - Code for the macro's Lambda function.
 - src/tests - Unit tests for the macro code. 
