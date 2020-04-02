@@ -281,21 +281,22 @@ Resources: {}
 ```
 
 You can choose how to deploy this template to your infrastructure. For solo
-developers, the AWS CLI or AWS SAM CLI are both good choices with
-[aws-vault](https://github.com/99designs/aws-vault) to store AWS Account
-credentials. For teams which share the on-demand infrastructure, consider using
-a Buildkite Pipeline for continuous deployment of the infrastructure.
+developers, you can use either the AWS CLI or AWS SAM CLI, consider using
+something like [aws-vault](https://github.com/99designs/aws-vault) to store your
+AWS Account credentials securely. For teams, consider using a Buildkite Pipeline
+and IAM Role with permission to deploy the CloudFormation template for
+continuous deployment of your infrastructure.
 
 ### AWS CLI
 
 ```bash
-template$ aws cloudformation deploy --template-file template.yml --stack-name agent-composer
+template$ aws-vault exec ci-account -- aws cloudformation deploy --template-file template.yml --stack-name agent-composer
 ```
 
 ### AWS SAM
 
 ```bash
-template$ sam deploy --template-file template.yml --stack-name agent-composer
+template$ aws-vault exec ci-account -- sam deploy --template-file template.yml --stack-name agent-composer
 ```
 
 The following examples show you how to:
