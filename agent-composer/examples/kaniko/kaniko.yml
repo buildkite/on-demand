@@ -95,7 +95,7 @@ Resources:
             - ContainerName: kaniko
               Condition: HEALTHY
             - ContainerName: agent-init
-              Condition: COMPLETE
+              Condition: SUCCESS
           MountPoints:
             - !If
               - IncludeSshAgent
@@ -167,7 +167,7 @@ Resources:
           Essential: true
           DependsOn:
             - ContainerName: docker-login
-              Condition: COMPLETE
+              Condition: SUCCESS
           LogConfiguration:
             LogDriver: awslogs
             Options:
