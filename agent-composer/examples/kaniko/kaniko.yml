@@ -17,6 +17,7 @@ Parameters:
     # Type: AWS::SSM::Parameter::Name
     Type: String
     Description: Optional, an AWS SSM Parameter Path where the Buildkite Agent token is stored. Defaults to /buildkite/agent-token.
+    Default: ''
   SshAgentBackend:
     Type: String
     Description: API Gateway Stage ARN for your `iam-ssh-agent` backend. If specified, an `ssh-agent` sidecar container will be included.
