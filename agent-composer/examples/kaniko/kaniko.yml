@@ -16,7 +16,7 @@ Parameters:
     # Should be AWS::SSM::Parameter::Name but can't be optional
     # Type: AWS::SSM::Parameter::Name
     Type: String
-    Description: Optional, an AWS SSM Parameter path where the buildkite agent token is stored. Defaults to /buildkite/agent-token
+    Description: Optional, an AWS SSM Parameter Path where the Buildkite Agent token is stored. Defaults to /buildkite/agent-token.
   SshAgentBackend:
     Type: String
     Description: API Gateway Stage ARN for your `iam-ssh-agent` backend. If specified, an `ssh-agent` sidecar container will be included.
@@ -27,11 +27,11 @@ Parameters:
     # Should be AWS::SSM::Parameter::Name but can't be optional
     # Type: AWS::SSM::Parameter::Name
     Type: String
-    Description: Optional, an AWS SSM Parameter path to Docker Hub credentials. The parameter should store a string in the format `username:token` e.g. `keithduncan:1234EXAMPLE`.
+    Description: Optional, an AWS SSM Parameter Path to Docker Hub credentials. The parameter should store a string in the format `username:token` e.g. `keithduncan:1234EXAMPLE`.
     Default: ''
   DockerConfigAwsRegistriesEcrHelper:
     Type: CommaDelimitedList
-    Description: AWS AccountIds to include the ecr-login helper in the docker config.
+    Description: AWS AccountIds to use the `ecr-login` credHelpers in the Docker config.
     Default: ''
   TaskRoleArn:
     Type: String
