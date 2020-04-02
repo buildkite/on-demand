@@ -1,6 +1,6 @@
 # Buildkite On-Demand
 
-Schedule on-demand, single-shot Buildkite Agents, on ECS.
+Schedule single-shot Buildkite Agents, on-demand, on ECS.
 
 Buildkite on-demand is an event driven Buildkite Agent scheduler. Built on the
 AWS EventBridge integration, containerised Buildkite Agents are scheduled using
