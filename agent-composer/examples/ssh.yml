@@ -56,7 +56,31 @@ Resources:
           Image: keithduncan/iam-ssh-agent:0.2.2
           Environment:
             - Name: IAM_SSH_AGENT_BACKEND_URL
-              Value: !Ref SshAgentBackend
+              Value: {
+                "Fn::Sub": [
+                  "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}",
+                  {
+                    ApiId: {
+                      "Fn::Select": [
+                        5,
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                      ]
+                    },
+                    Region: {
+                      "Fn::Select": [
+                        3,
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                      ]
+                    },
+                    Stage: {
+                      "Fn::Select": [
+                        1,
+                        { "Fn::Split": [ "/", SshAgentBackend ] }
+                      ]
+                    },
+                  },
+                ]
+              }
           LogConfiguration:
             LogDriver: awslogs
             Options:
