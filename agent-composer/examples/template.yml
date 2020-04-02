@@ -38,6 +38,16 @@ Conditions:
   IncludeKaniko: !Equals [ 'true', !Ref IncludeKaniko ]
 
 Resources:
+  # The default task definition to be used if no task-definition agent query
+  # rule is given.
+  Buildkite:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: keithduncan/buildkite-base:latest
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      SshAgentBackend: !Ref SshAgentBackend
+      TaskFamily: buildkite
+
   # If an SshAgentBackend is given, include a debug task definition.
   #
   # This task definition can be scheduled with any task role that
@@ -51,16 +61,6 @@ Resources:
       Parameters:
         BuildkiteAgentTokenParameterPath: !ImportValue agent-scheduler-BuildkiteAgentTokenParameter
         SshAgentBackend: !Ref SshAgentBackend
-
-  # The default task definition to be used if no task-definition agent query
-  # rule is given.
-  Buildkite:
-    Type: Buildkite::ECS::TaskDefinition
-    Properties:
-      Image: keithduncan/buildkite-base:latest
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
-      SshAgentBackend: !Ref SshAgentBackend
-      TaskFamily: buildkite
 
   # Stock Ruby 2.7.0 image with agent sidecar.
   Ruby2:
