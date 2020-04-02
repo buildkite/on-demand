@@ -1,0 +1,39 @@
+{
+  "region": "us-east-1",
+  "accountId": "$ACCOUNT_ID",
+  "fragment": {
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Globals": {
+
+    },
+    "Resources": {
+      "Terraform": {
+        "Type": "Buildkite::ECS::Agent",
+        "Properties": {
+          "Image": "hashicorp/terraform:light",
+          "BuildkiteAgentImage": {
+            "Fn::GetAtt": "BuildAgentSidecar.Outputs.Image"
+          },
+          "SshAgentBackend": {
+            "Fn::FindInMap": [
+              "AgentConfig",
+              {
+                "Ref": "AWS::Region"
+              },
+              "SshBackend"
+            ]
+          },
+          "TaskFamily": "terraform"
+        }
+      }
+    }
+  },
+  "transformId": "$TRANSFORM_ID", 
+  "params": {
+
+  }, 
+  "requestId": "$REQUEST_ID",
+  "templateParameterValues": {
+
+  } 
+}

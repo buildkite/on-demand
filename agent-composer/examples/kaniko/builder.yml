@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent Image Builder for a GitHub.com repository
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Description: Name for an ECR Repository to store images built from SourceRepository.
+    AllowedPattern: "^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:\\/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$"
+    ConstraintDescription: |
+      must be a Docker image name without any forward slashes or a tag suffix
+  TaskRoleName:
+    Type: String
+  SshAgentBackend:
+    Type: String
+    Default: ''
+
+Conditions:
+  IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
+
+Resources:
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Delete untagged images",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 1
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      RepositoryName: !Ref RepositoryName
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /BuildkiteAgentTask/
+      RoleName: !Ref TaskRoleName
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Policies:
+        - !If
+          - IncludeSshAgent
+          - PolicyName: SshAgentApi
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action: execute-api:Invoke
+                  Resource: !Sub "${SshAgentBackend}/*/*"
+          - !Ref AWS::NoValue
+        - PolicyName: AllowECRAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:CompleteLayerUpload"
+                  - "ecr:TagResource"
+                  - "ecr:UploadLayerPart"
+                  - "ecr:ListImages"
+                  - "ecr:InitiateLayerUpload"
+                  - "ecr:PutImage"
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${Repository}"
+
+Outputs:
+  Image:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}"
+    Description: The Docker image repository.

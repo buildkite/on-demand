@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent with sidecar SSH Agent
+
+Parameters:
+  BuildkiteAgentTokenParameterPath:
+    Type: String
+    Default: ''
+  SshAgentBackend:
+    Type: String
+
+Conditions:
+  HasBuildkiteAgentTokenParameterPath: !Not [ !Equals [ !Ref BuildkiteAgentTokenParameterPath, '' ] ]
+
+Resources:  
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: agent
+          EntryPoint:
+            - /bin/sh
+            - -c
+          Command:
+            - ssh-add -L; ssh -vvvvT git@github.com
+          Essential: true
+          Image: buildkite/agent:3
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: /aws/ecs/ssh
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: SSH_AUTH_SOCK
+              Value: /ssh/socket
+          Secrets:
+            - Name: BUILDKITE_AGENT_TOKEN
+              ValueFrom:
+                !If
+                  - HasBuildkiteAgentTokenParameterPath
+                  - !Ref BuildkiteAgentTokenParameterPath
+                  - /buildkite/agent-token
+          DependsOn:
+            - Condition: HEALTHY
+              ContainerName: ssh-agent
+          MountPoints:
+            - ContainerPath: /ssh
+              SourceVolume: ssh-agent
+        - Name: ssh-agent
+          Command:
+            - iam-ssh-agent
+            - daemon
+            - --bind-to=/ssh/socket
+          Essential: true
+          Image: keithduncan/iam-ssh-agent:0.2.2
+          Environment:
+            - Name: IAM_SSH_AGENT_BACKEND_URL
+              Value: {
+                "Fn::Sub": [
+                  "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}",
+                  {
+                    ApiId: {
+                      "Fn::Select": [
+                        5,
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                      ]
+                    },
+                    Region: {
+                      "Fn::Select": [
+                        3,
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                      ]
+                    },
+                    Stage: {
+                      "Fn::Select": [
+                        1,
+                        { "Fn::Split": [ "/", SshAgentBackend ] }
+                      ]
+                    },
+                  },
+                ]
+              }
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: /aws/ecs/ssh
+              awslogs-stream-prefix: ecs
+          HealthCheck:
+            Command:
+              - test
+              - -S
+              - /ssh/socket
+          MountPoints:
+            - ContainerPath: /ssh
+              SourceVolume: ssh-agent
+      Cpu: 256
+      Memory: 512
+      Family: ssh
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      RequiresCompatibilities:
+        - FARGATE
+      Volumes:
+        - Name: ssh-agent
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: TaskDefinition
+    Properties:
+      LogGroupName: /aws/ecs/ssh
+      RetentionInDays: 1
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ECSTaskExecutionRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /BuildkiteTaskExecutionRole/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy

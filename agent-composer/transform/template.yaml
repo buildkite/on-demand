@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  buildkite-on-demand-transform
+
+  A CloudFormation Macro to make defining Buildkite Agent ECS Task Definitions easy.
+
+Parameters:
+  TransformName:
+    Type: String
+    Default: Buildkite-Agents-2020-03-09
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  TransformFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function to transfom Buildkite::ECS::TaskDefinition resources.
+      CodeUri: src/
+      Handler: app.handler
+      Runtime: nodejs12.x
+  TransformFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: TransformFunction
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        !Sub
+        - '/aws/lambda/${LambdaName}'
+        - LambdaName: !Ref TransformFunction
+  Transform:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Description: A CloudFormation macro to transform Buildkite::ECS::TaskDefinition resources.
+      FunctionName: !Ref TransformFunction
+      LogGroupName: !Sub /aws/cloudformation/${TransformName}
+      Name: !Ref TransformName
+  TransformLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: Transform
+    Properties:
+      RetentionInDays: 1
+      LogGroupName: !Sub /aws/cloudformation/${TransformName}
