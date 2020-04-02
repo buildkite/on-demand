@@ -15,8 +15,9 @@ path to a Buildkite Agent registration token. Defaults to `/buildkite/agent-toke
 * **SshAgentBackend**: Optional, an `iam-ssh-agent` backend for use cloning
 repositories with git+ssh.
 * **DockerConfigHubTokenParameterPath**: Optional, AWS SSM Parameter Store
-parameter path to a Docker Hub credentials. The parameter should store a string
-in the format `username:token` e.g. `keithduncan:1234EXAMPLE`.
+parameter path to a Docker Hub credentials. The parameter should store a
+`SecureString` encrypted using the `aws/ssm` KMS key in the format `username:token`
+e.g. `keithduncan:1234EXAMPLE`.
 * **DockerConfigAwsRegistriesEcrHelper**: Optional, comma separated list of AWS
 Account IDs to use [awslabs/amazon-ecr-credential-helper](https://github.com/awslabs/amazon-ecr-credential-helper)
 for. To push to AWS ECR repositories for the account this is deployed to pass
