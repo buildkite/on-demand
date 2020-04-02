@@ -12,8 +12,9 @@ don’t have to map 1:1 with Task Roles, you can share a Task Definition between
 different pipelines or steps and override the Task Role for each.
 
 See the [patterns section](#patterns) for documentation on the individual
-patterns that make up agent-composer, or skip ahead to [deploying](#deploying)
-to start building task definitions for on-demand pipelines.
+patterns that make up agent-composer, or skip ahead to
+[deploying](#deploying-task-definitions) to start building task definitions for
+on-demand pipelines.
 
 
 # Patterns
@@ -252,7 +253,7 @@ stack to provide somewhere to store the built images. See the
 [kaniko stack documentation](examples/kaniko) for more details.
 
 
-# Deploying
+# Deploying Task Definitions
 
 Deploying your task definitions is best done as part of a CloudFormation
 template. That ensures the task family names, CPU and memory requirements are
