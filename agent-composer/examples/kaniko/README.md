@@ -87,14 +87,14 @@ steps:
       task-role: DockerHubPublish
 ```
 
-The `executor` command is proxied through the remote shell, executed in the
-`kaniko` container when the client `socat` connects. Once the remote command
-exits the command step will also exit.
+The `executor` command is piped to the remote shell, and executed in the
+`kaniko` container. When the remote shell command completes, the pipeline
+command step will exit.
 
 ## Buildkite Agent Plugin
 
-Writing out the executor shell command in every pipeline would be error prone.
-The [kanikoctl agent plugin](https://github.com/keithduncan/kanikoctl-buildkite-plugin)
+Writing out the remote executor shell command in every pipeline would be error
+prone. The [kanikoctl agent plugin](https://github.com/keithduncan/kanikoctl-buildkite-plugin)
 wraps the command line options in a more declarative format. Using the plugin
 the same pipeline would look like this:
 
@@ -119,10 +119,12 @@ for documentation on the plugin parameters.
 
 ## Builder Stack
 
-The examples above show pushing an image to Docker Hub. They depend on the
-`kaniko` task definition having a Docker Hub token.
+The examples above show pushing an image to Docker Hub and depend on the
+`kaniko` stack being instantiated with a
+`DockerConfigHubTokenParameterPath` template parameter.
 
 To publish to an AWS ECR repository instead, include the
-[kaniko builder](builder.yml) CloudFormation stack in your task definition
-template. This stack creates an ECR repository and IAM Task Role with permission
-to push to it that you use with the `kaniko` task definition.
+[kaniko builder](builder.yml) CloudFormation stack in your template and provide
+the `DockerConfigAwsRegistriesEcrHelper` parameter. This stack creates an ECR
+repository and IAM Task Role with permission to push to it that you use with
+the `kaniko` task definition.
