@@ -254,3 +254,119 @@ stack to provide somewhere to store the built images. See the
 
 # Deploying
 
+Deploying your task definitions is best done as part of a CloudFormation
+template. That ensures the task family names, CPU and memory requirements are
+all saved in a repeatable fashion.
+
+The following examples use the
+[Buildkite Agent CloudFormation Macro](#buildkite-agent-cloudformation-macro) as
+a [template transform](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html). [Deploy the CloudFormation Macro](transform/README.md#deploying)
+to your AWS Account before following the examples.
+
+To start adding task definitions, create a new source code repository for your
+infrastructure and create a `template.yml` file that looks like this:
+
+```yaml
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent Task Definitions
+
+Transform:
+- Buildkite-Agents-2020-03-21
+
+Resources: {}
+```
+
+## Default Task Definition
+
+`agent-scheduler` uses a default task family of `buildkite` if a pipeline step
+doesn't specify a `task-definition` in the agent query rules. Add a simple
+default task definition to your CloudFormation template like this:
+
+```yaml
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite Agent Task Definitions
+
+Transform:
+- Buildkite-Agents-2020-03-21
+
+Resources:
+  Buildkite:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: keithduncan/buildkite-base
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      TaskFamily: buildkite
+      TaskCpu: 256
+      TaskMemory: 512
+```
+
+This task definition uses a pre-published [base](https://github.com/keithduncan/buildkite-base)
+and [agent sidecar](https://github.com/keithduncan/buildkite-sidecar) image
+from Docker Hub. You can of course use your own base image with your own set
+of pre-installed software. Avoid installing too much in your base image, prefer
+to use more specific task definitions with their own image to avoid collisions
+or version requirement conflicts.
+
+To test that your on-demand infrastructure is working, create a new Buildkite
+Pipeline for a public repository that uses your `agent-scheduler`, and create a
+step that uses this task definition:
+
+```yaml
+agents:
+  queue: your-agent-scheduler-queue
+
+steps:
+  - label: "Hello"
+    command: echo hello
+    agents:
+      task-definition: buildkite
+```
+
+Create a new build for this pipeline and check that an agent is created to run
+the job.
+
+## Sample Ruby Task Definition
+
+To test a simple Rails project we need a task definition that includes the Ruby
+interpreter. Add a new task definition to your template resources section like
+this:
+
+```yaml
+Resources:
+  Ruby2:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: ruby:2.7.0
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      TaskFamily: ruby2
+      TaskCpu: 1024
+      TaskMemory: 2048
+```
+
+This task definition uses the stock `ruby:2.7.0` image from Docker Hub and adds
+a Buildkite Agent sidecar. It also has more CPU and memory than the default task
+definition.
+
+A Buildkite Pipeline that uses this task definition to test a Rails application
+might look like this:
+
+```yaml
+agents:
+  queue: your-agent-scheduler-queue
+  task-definition: ruby2
+
+steps:
+  - command:
+      - bundle install
+      - rake db:schema:load test RAILS_ENV=test
+    label: ":rails:"
+    env:
+      RUBYOPT: "-W:no-deprecated -W:no-experimental"
+```
+
+This pipeline will install the gem dependencies using Bundler, load the database
+schema for the test environment and then run tests.
+
+
