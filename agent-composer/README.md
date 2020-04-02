@@ -298,11 +298,18 @@ template$ aws cloudformation deploy --template-file template.yml --stack-name ag
 template$ sam deploy --template-file template.yml --stack-name agent-composer
 ```
 
+The following examples show you how to:
+
+- [Create a default task definition](#default-task-definition)
+- [Test a simple Rails application](#testing-rails-applications)
+- [Build Docker images](#building-docker-images)
+- [Clone private repositories with git+ssh](#cloning-private-repositories)
+
 ## Default Task Definition
 
-`agent-scheduler` uses a default task family of `buildkite` if a pipeline step
-doesn't specify a `task-definition` in the agent query rules. Add a simple
-default task definition to your CloudFormation template like this:
+`agent-scheduler` defaults to a `buildkite` task definition if the pipeline
+steps don’t include a `task-definition` in the agent query rules. Add a default
+task definition to your CloudFormation template like this:
 
 ```yaml
 AWSTemplateFormatVersion: 2010-09-09
@@ -323,8 +330,8 @@ Resources:
       TaskMemory: 512
 ```
 
-This task definition uses a pre-published [base](https://github.com/keithduncan/buildkite-base)
-and [agent sidecar](https://github.com/keithduncan/buildkite-sidecar) image
+This task definition uses a [base image](https://github.com/keithduncan/buildkite-base)
+and [agent sidecar image](https://github.com/keithduncan/buildkite-sidecar)
 from Docker Hub. You can of course use your own base image with your own set
 of pre-installed software. Avoid installing too much in your base image, prefer
 to use more specific task definitions with their own image to avoid collisions
@@ -348,11 +355,11 @@ steps:
 Create a new build for this pipeline and check that an agent is created to run
 the job.
 
-## Sample Ruby Task Definition
+## Testing Rails Applications
 
-To test a simple Rails project we need a task definition that includes the Ruby
-interpreter. Add a new task definition to your template resources section like
-this:
+To run the tests for a simple Rails project we need a task definition that
+includes the Ruby interpreter. Add a new task definition to your template
+resources section like this:
 
 ```yaml
 Resources:
@@ -390,12 +397,12 @@ steps:
 This pipeline will install the gem dependencies using Bundler, load the database
 schema for the test environment and then run tests.
 
-## Docker Builder Task Definition
+## Building Docker Images
 
 To build Docker images using the [kaniko](examples/kaniko) task definition, you
-can include the kaniko sub-stack. You can use this task definition to build
-general purpose docker images or even additional base images for use in your
-Buildkite on-demand infrastructure.
+can include the kaniko sub-stack in your template. You can use this task
+definition to build general purpose docker images or even additional base images
+for use in your Buildkite on-demand infrastructure.
 
 ```yaml
 Resources:
@@ -406,7 +413,6 @@ Resources:
       Parameters:
         Image: keithduncan/buildkite-base
         BuildkiteAgentImage: keithduncan/buildkite-sidecar
-        DockerConfigHubTokenParameterPath: /hub.docker.com/keithduncan/token
         DockerConfigAwsRegistriesEcrHelper:
           !Join
             - ","
@@ -416,30 +422,31 @@ Resources:
 `keithduncan/buildkite-base` includes `socat` which is needed to communicate
 with the kaniko sidecar container.
 
-This instantiation of the kaniko stack uses a Docker Hub token stored in the AWS
-SSM Parameter Store and `ecr-login` to push to the repositories in this account.
-N.B. while the generated Docker configuration will use `ecr-login` to
-authenticate to ECR, you must use a task role with permission to push to the
-ECR repository you want to use.
+This instantiation of the kaniko stack configures kaniko to use `ecr-login` when
+pushing images to the AWS Elastic Container Registry for this account.
+N.B. while the Docker configuration will use `ecr-login` to authenticate to ECR,
+you must use a task role with permission to push to the ECR repository you want
+to use, otherwise the image push will fail.
 
-The kaniko builder stack creates an ECR and IAM Role with ECR push permission
-for your Buildkite Pipeline:
+To give your Buildkite Pipeline somewhere to push and store an image,
+instantiate a copy of the kaniko builder stack. This sub-stack creates an ECR
+repository and IAM Role with ECR repository push permission:
 
 ```yaml
 Resources:
-  BuildImage:
+  BuildExampleImage:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: examples/kaniko/builder.yml
       Parameters:
-        RepositoryName: my-ecr-repository
-        TaskRoleName: BuildImage
+        RepositoryName: example-repository
+        TaskRoleName: BuildExampleImage
 ```
 
-To create named roles that you can use in your Buildkite Pipeline, your
-CloudFormation stack will need `CAPABILITY_NAMED_IAM`.
+N.B. to create named roles that you can reference in your Buildkite Pipeline
+steps, your CloudFormation stack will need `CAPABILITY_NAMED_IAM`.
 
-Now you combine these two stacks with a Buildkite Pipeline:
+Now, you combine these two stacks with a Buildkite Pipeline:
 
 ```yaml
 agents:
@@ -450,17 +457,14 @@ steps:
     plugins:
       - "keithduncan/kanikoctl#261d24e5f25e01ba0ee8f2b406c5ff7c260d2cc5":
           destination: 1234EXAMPLE.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repository
-          tags:
-            - latest
     agents:
       task-definition: kaniko
-      task-role: BuildImage
+      task-role: BuildExampleImage
 ```
 
-This pipeline uses the kaniko task definition, and the `BuildImage` task role
-to build and push an image to an ECR repository.
-
-You should instantiate as many `example/kaniko/builder.yml` stacks as you need.
+This pipeline uses the kaniko task definition, and the `BuildExampleImage` task
+role to build and push an image to an ECR repository. You should instantiate as
+many `example/kaniko/builder.yml` stacks as you need to store images.
 
 ## Cloning Private Repositories
 
