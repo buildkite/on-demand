@@ -308,6 +308,9 @@ The following examples show you how to:
 - [Build Docker images](#building-docker-images)
 - [Clone private repositories with git+ssh](#cloning-private-repositories)
 
+See [examples/template.yml](examples/template.yml) for an example template with
+several task definitions.
+
 ## Default Task Definition
 
 `agent-scheduler` [defaults](https://github.com/keithduncan/buildkite-on-demand/blob/master/agent-scheduler/src/handlers/buildkite-run-task.js)
