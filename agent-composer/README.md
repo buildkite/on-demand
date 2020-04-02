@@ -172,6 +172,7 @@ Ruby2:
   Properties:
     Image: ruby:2.7
     BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+    TaskFamily: ruby2
     TaskCpu: 1024
     TaskMemory: 2048
 ```
