@@ -107,15 +107,14 @@ The [`transform`](transform) directory contains an AWS SAM project that deploys
 a CloudFormation Transform Macro to simplify creating the
 `AWS::ECS::TaskDefinition` resources for your agents and reduces duplication.
 
-The transform can be deployed using the AWS SAM CLI or from the AWS Serverless
-Application Repository:
+Deploy the CloudFormation Macro using the AWS Serverless Application Repository:
 
 [![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-transform)
 
-This transform expands any `Type: Buildkite::ECS::TaskDefinition` resources
-into: an ECS task definition, a log group, an IAM Role for Execution (with
-access to the given SSM secrets), and an IAM Role for the Task (with access to
-the given `iam-ssh-agent` backend if given).
+This transform expands any `Type: Buildkite::ECS::TaskDefinition` CloudFormation
+resources in your template into: an ECS task definition, a log group, an IAM
+Role for Execution (with access to the given SSM secrets), and an IAM Role for
+the Task (with access to the given `iam-ssh-agent` backend).
 
 The following resource parameters are supported:
 
@@ -124,20 +123,21 @@ you need for command steps and plugins. The `buildkite-agent` is not required
 if using the `BuildkiteAgentImage` agent injection option.
 - **BuildkiteAgentImage**: Optional, an image with the injectable
 `buildkite-agent`. Should be a `FROM scratch` image that exposes a `/buildkite`
-volume.
+volume. If absent, your main image must include a `buildkite-agent` binary on
+the image `$PATH`.
 - **SshAgentBackend**: Optional, the ARN for your `iam-ssh-agent` API Gateway
-stage
+stage.
 - **Secrets**: Optional, a list of `{ Name: MY_NAME, ValueFrom: /ssm/parameter/path }`
-objects. If given the execution role is given access to fetch and decrypt these
-SSM parameters.
+objects. If given, the generated execution role is given access to fetch and
+decrypt these SSM parameters.
 - **Environment**: Optional, a list of `{ Name: MY_NAME, Value: MY_VALUE }`
 objects to set environment variables in the container for `Image`. The Buildkite
 Agent environment variables are included automatically, as is `SSH_AUTH_SOCK` if
 you are using `iam-ssh-agent`.
 - **TaskFamily**: the name of the task definition, must be unique per account
-per region. This will be used by `agent-scheduler` to schedule the task based on
-a `task-definition: my-task-definition` agent query rule in your Buildkite
-Pipeline Steps.
+per region. This will be used by your Buildkite Pipelines and `agent-scheduler`
+to schedule the task based on the `task-definition: my-task-definition` agent
+query rule in your Pipeline Step configuration.
 - **TaskMemory**: how much memory to create the task with, see the
 [`AWS::ECS::TaskDefinition` documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
 for appropriate values.
@@ -151,8 +151,8 @@ using `iam-ssh-agent` you are responsible for ensuring an appropriate access
 policy is included.
 
 
-An execution role is synthesized based on the `Secrets` parameter and is not
-otherwise configurable.
+An execution role is synthesized for the task definition based on the `Secrets`
+parameter and is not otherwise configurable.
 
 
 Using a CloudFormation Macro allows passing the list of secrets and environment
@@ -209,33 +209,39 @@ publish new crate versions to https://crates.io.
 The main image is the output of an [image builder stack](#image-builder-cloudformation-stacks),
 and the Buildkite sidecar is also the output of a builder stack.
 
-This image does have an `iam-ssh-agent` sidecar, included automatically by
-specifying the ARN of the API Gateway stage in the `SshAgentBackend` parameter.
+The task definition will include an `iam-ssh-agent` sidecar, by specifying the
+ARN of the API Gateway stage in the `SshAgentBackend` parameter.
 
-In order to publish a new crate version an authentication token is required.
-`cargo`, the rust build tool, supports reading this token from the
-`CARGO_REGISTRY_TOKEN` environment variable. By including this item in the
-secret list, the macro adds permission to fetch and decrypt the given SSM
-parameter path to the task definition's ECS Execution Role.
+To allow the Pipeline Steps that use this task definition to publish Rust
+crates, an authentication token is included in the environment. `cargo`, the
+Rust build tool, supports reading this token from the `CARGO_REGISTRY_TOKEN`
+environment variable. By including this item in the list of secrets, the macro
+adds permission to fetch and decrypt the given SSM parameter path to the task
+definition's ECS Execution Role.
 
 
 ## Image Builder CloudFormation Stacks
 
-If you cannot compose an agent from a stock image with [agent injection](#buildkite-agent-injection)
-you can build an image instead.
+If you cannot compose a task definition from stock Docker Hub images using
+[agent injection](#buildkite-agent-injection), you can build an image instead.
+
+These approaches are not mutually exclusive, you can still use agent injection
+with your own base images.
 
 There are two image builder stack examples:
 
-- [`CodeBuild`](examples/codebuild/codebuild.yml): creates an AWS CodeBuild Project to
-build an image from a Dockerfile in a GitHub repository and stores the result in
-AWS ECR. This stack requires you to connect CodeBuild to GitHub using OAuth with
-an account that has access to the repositories you want to build. Alternatively,
-you can build open source repositories without authentication.
+- [`CodeBuild`](examples/codebuild/codebuild.yml): creates an AWS CodeBuild
+Project to build an image from a Dockerfile in a GitHub repository and stores
+the result in AWS ECR. This stack requires you to connect CodeBuild to GitHub
+using OAuth with an account that has access to the repositories you want to
+build. Alternatively, you can build open source repositories without
+authentication.
 - [`Kaniko`](examples/kaniko/kaniko.yml): creates an ECS Task Definition that
 uses the [GoogleContainerTools/kaniko](http://github.com/GoogleContainerTools/kaniko)
-project to build Docker images in userspace without access to a Docker daemon.
+project to build Docker images without access to a Docker daemon.
 This stack works in conjunction with the [`examples/kaniko/builder.yml`](examples/kaniko/builder.yml)
-stack to provide somewhere to store the built images. See the [kaniko stack documentation](examples/kaniko) for more details.
+stack to provide somewhere to store the built images. See the
+[kaniko stack documentation](examples/kaniko) for more details.
 
 
 # Deploying

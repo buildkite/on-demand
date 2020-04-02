@@ -1,14 +1,14 @@
 # agent-scheduler
 
-This project contains source code and supporting files for running Buildkite
-Agents on-demand in response to builds.
+This project contains source code and supporting files for scheduling Buildkite
+Agents on-demand with AWS Elastic Container Service, in response to builds.
 
 - `src` - Code for the Lambda functions. These have been inlined into `template.yml` for easier stack creation in any region.
 - `source.yml` - A CloudFormation template that defines the AWS resources.
 
 ## Set-up Instructions
 
-Before deploying this serverless application to your AWS account, you have to
+Before deploying this serverless application to your AWS account, you need to
 configure the Amazon EventBridge integration between your Buildkite and AWS
 accounts. See the [Buildkite Documentation](https://buildkite.com/docs/integrations/amazon-eventbridge)
 for how to do this.
@@ -20,9 +20,9 @@ EventBridge integration.
 Once you have associated your Buildkite Partner Event Source with an Amazon
 EventBridge bus, you are ready to deploy the `agent-scheduler` stack to your
 AWS Account. You can deploy this stack using the AWS Console on the web or AWS
-Serverless Application Model CLI on your local device.
+Serverless Application Model on the command line.
 
-## Deploy using the CloudFormation Console
+## Deploy using the AWS CloudFormation Web Console
 
 [![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=agent-scheduler&templateURL=https://buildkite-on-demand-us-east-1.s3.amazonaws.com/agent-scheduler/latest/template.yml)
 
