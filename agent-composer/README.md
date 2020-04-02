@@ -369,4 +369,31 @@ steps:
 This pipeline will install the gem dependencies using Bundler, load the database
 schema for the test environment and then run tests.
 
+## Docker Builder Task Definition
+
+To build Docker images using the [kaniko](examples/kaniko) task definition, you
+can include kaniko sub-stack:
+
+```yaml
+Resources:
+  Kaniko:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: kaniko.yml
+      Parameters:
+        Image: keithduncan/buildkite-base
+        BuildkiteAgentImage: keithduncan/buildkite-sidecar
+        DockerConfigHubTokenParameterPath: /hub.docker.com/keithduncan/token
+        DockerConfigAwsRegistriesEcrHelper:
+          !Join
+            - ","
+            - [ !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" ]
+```
+
+This instantiation of the kaniko stack uses a Docker Hub token stored in the AWS
+SSM Parameter Store and `ecr-login` to push to the repositories in this account.
+N.B. while the generated Docker configuration will use `ecr-login` to
+authenticate to ECR, you must use a task role with permission to push to the
+ECR repository you want to use.
+
 

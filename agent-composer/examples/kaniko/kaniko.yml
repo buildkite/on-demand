@@ -13,8 +13,10 @@ Parameters:
     ConstraintDescription: |
       must be a Docker image reference e.g. node:12, buildkite/agent:latest, 012345678910.dkr.ecr.us-east-1.amazonaws.com/agent/buildkite:latest, quay.io/organization/image, keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
   BuildkiteAgentTokenParameterPath:
-    Type: AWS::SSM::Parameter::Name
-    Description: An AWS SSM Parameter path where the buildkite agent token is stored.
+    # Should be AWS::SSM::Parameter::Name but can't be optional
+    # Type: AWS::SSM::Parameter::Name
+    Type: String
+    Description: Optional, an AWS SSM Parameter path where the buildkite agent token is stored. Defaults to /buildkite/agent-token
   SshAgentBackend:
     Type: String
     Description: API Gateway Stage ARN for your `iam-ssh-agent` backend. If specified, an `ssh-agent` sidecar container will be included.
@@ -25,7 +27,7 @@ Parameters:
     # Should be AWS::SSM::Parameter::Name but can't be optional
     # Type: AWS::SSM::Parameter::Name
     Type: String
-    Description: (Optional) An AWS SSM Parameter path to a Docker Hub token.
+    Description: Optional, an AWS SSM Parameter path to a Docker Hub token.
     Default: ''
   DockerConfigAwsRegistriesEcrHelper:
     Type: CommaDelimitedList
@@ -33,10 +35,11 @@ Parameters:
     Default: ''
   TaskRoleArn:
     Type: String
-    Description: (Optional) The default task role for the ECS task.
+    Description: Optional, the default task role for the ECS task.
     Default: ''
 
 Conditions:
+  HasBuildkiteAgentTokenParameterPath: !Not [ !Equals [ !Ref BuildkiteAgentTokenParameterPath, '' ] ]
   IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
   CreateTaskRole: !Equals [ !Ref TaskRoleArn, '' ]
 
@@ -263,7 +266,13 @@ Resources:
                   - 'ssm:GetParameter'
                   - 'ssm:GetParameters'
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BuildkiteAgentTokenParameterPath}'
+                  - !Sub
+                      - 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AgentToken}'
+                      - AgentToken:
+                          !If
+                            - HasBuildkiteAgentTokenParameterPath
+                            - !Ref BuildkiteAgentTokenParameterPath
+                            - /buildkite/agent-token
                   - !If
                       - IncludeHubToken
                       - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DockerConfigHubTokenParameterPath}'
