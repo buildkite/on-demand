@@ -192,7 +192,7 @@ Resources:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteTaskExecution/*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentExecution/*
               - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask/*
           Version: "2012-10-17"
       Environment:
