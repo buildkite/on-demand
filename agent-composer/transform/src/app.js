@@ -128,7 +128,7 @@ exports.handler = async (event) => {
                         }
                     ]
                 },
-                Path: '/BuildkiteTaskExecutionRole/',
+                Path: '/BuildkiteAgentExecution/',
                 ManagedPolicyArns: [
                     'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
                 ],

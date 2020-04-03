@@ -120,6 +120,6 @@ Resources:
             Principal:
               Service: [ecs-tasks.amazonaws.com]
             Action: ['sts:AssumeRole']
-      Path: /BuildkiteTaskExecutionRole/
+      Path: /BuildkiteAgentExecution/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
