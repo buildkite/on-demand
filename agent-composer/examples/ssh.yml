@@ -5,12 +5,9 @@ Description: >-
 Parameters:
   BuildkiteAgentTokenParameterPath:
     Type: String
-    Default: ''
+    Default: /buildkite/agent-token
   SshAgentBackend:
     Type: String
-
-Conditions:
-  HasBuildkiteAgentTokenParameterPath: !Not [ !Equals [ !Ref BuildkiteAgentTokenParameterPath, '' ] ]
 
 Resources:  
   TaskDefinition:
@@ -36,11 +33,7 @@ Resources:
               Value: /ssh/socket
           Secrets:
             - Name: BUILDKITE_AGENT_TOKEN
-              ValueFrom:
-                !If
-                  - HasBuildkiteAgentTokenParameterPath
-                  - !Ref BuildkiteAgentTokenParameterPath
-                  - /buildkite/agent-token
+              ValueFrom: !Ref BuildkiteAgentTokenParameterPath
           DependsOn:
             - Condition: HEALTHY
               ContainerName: ssh-agent
