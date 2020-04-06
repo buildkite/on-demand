@@ -63,19 +63,19 @@ Resources:
                     ApiId: {
                       "Fn::Select": [
                         5,
-                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
                       ]
                     },
                     Region: {
                       "Fn::Select": [
                         3,
-                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", SshAgentBackend ] } ] } ] }
+                        { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
                       ]
                     },
                     Stage: {
                       "Fn::Select": [
                         1,
-                        { "Fn::Split": [ "/", SshAgentBackend ] }
+                        { "Fn::Split": [ "/", !Ref SshAgentBackend ] }
                       ]
                     },
                   },
