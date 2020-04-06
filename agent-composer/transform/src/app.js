@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     for (let resourceName in fragment['Resources']) {
         let resource = fragment['Resources'][resourceName];
 
-        if (resource['Type'] != 'Buildkite::ECS::Agent' && resource['Type'] != 'Buildkite::ECS::TaskDefinition') {
+        if (resource['Type'] != 'Buildkite::ECS::TaskDefinition') {
             resources[resourceName] = resource;
             continue;
         }
