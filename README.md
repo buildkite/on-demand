@@ -28,5 +28,5 @@ EventBridge events from Buildkite and schedule agents on ECS.
 ## agent-composer
 
 [agent-composer](agent-composer) is a collection of AWS CloudFormation templates
-to help create AWS ECS Task Definitions that can be scheduled on-demand by
+to help create ECS Task Definitions that can be scheduled on-demand by
 [agent-scheduler](#agent-scheduler).
