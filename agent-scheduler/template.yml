@@ -172,7 +172,7 @@ Resources:
       Description: A Lambda function that dequeues Buildkite Job Scheduled notifications and runs an ECS task for them
       Runtime: nodejs10.x
       Handler: index.handler
-      InlineCode: !InlineCode src/handlers/buildkite-run-task.js
+      CodeUri: src/handlers/buildkite-run-task.js
       Events:
         SQSQueueEvent:
           Type: SQS
@@ -242,7 +242,7 @@ Resources:
       Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge.
       Runtime: nodejs10.x
       Handler: index.handler
-      InlineCode: !InlineCode src/handlers/buildkite-schedule-task.js
+      CodeUri: src/handlers/buildkite-schedule-task.js
       Events:
         EventBridge:
           Type: CloudWatchEvent
