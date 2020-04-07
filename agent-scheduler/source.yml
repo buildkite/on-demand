@@ -200,6 +200,7 @@ Resources:
           ECS_CLUSTER_NAME: !Ref ECSCluster
           VPC_SUBNETS: !If [ CreateVpc, !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ], !Join [ ',', !Ref VpcSubnetIds ] ]
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
+          DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
   RunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: BuildkiteRunTask
@@ -209,6 +210,31 @@ Resources:
         !Sub
         - '/aws/lambda/${LambdaName}'
         - LambdaName: !Ref BuildkiteRunTask
+
+  DefaultExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /BuildkiteAgentExecution/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: FetchDecryptSecrets
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
 
   BuildkiteScheduleTask:
     Type: AWS::Serverless::Function
