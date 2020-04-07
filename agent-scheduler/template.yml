@@ -187,7 +187,9 @@ Resources:
             QueueName: !GetAtt RunTaskQueue.QueueName
         - Statement:
           - Effect: Allow
-            Action: ecs:RunTask
+            Action:
+              - ecs:RunTask
+              - ecs:RegisterTaskDefinition
             Resource: "*"
           - Effect: Allow
             Action: iam:PassRole
