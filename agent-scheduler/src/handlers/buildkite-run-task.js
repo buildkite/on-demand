@@ -52,13 +52,13 @@ function getDefaultEcsRunTaskParams(cluster, job) {
 
 // cpu is user input, make sure this is a real cpu value
 function atLeastCpu(cpu) {
-    if cpu <= 256 {
+    if (cpu <= 256) {
         return 256
-    } else if cpu <= 512 {
+    } else if (cpu <= 512) {
         return 512
-    } else if cpu <= 1024 {
+    } else if (cpu <= 1024) {
         return 1024
-    } else if cpu <= 2048 {
+    } else if (cpu <= 2048) {
         return 2048
     } else {
         return 4096
@@ -83,13 +83,13 @@ function range(start, stop) {
 }
 
 function memoryRangeForCpu(cpu) {
-    if cpu == 256 {
+    if (cpu == 256) {
         return [512, 1024, 2048];
-    } else if cpu == 512 {
+    } else if (cpu == 512) {
         return range(1024, 4096);
-    } else if cpu == 1024 {
+    } else if (cpu == 1024) {
         return range(2048, 8192);
-    } else if cpu == 2048 {
+    } else if (cpu == 2048) {
         return range(4096, 16384);
     } else /* if cpu == 4096 */ {
         return range(8192, 30720);
@@ -103,7 +103,7 @@ function atLeastMemoryForCpu(memory, cpu) {
     let supported = memoryRangeForCpu(cpu);
 
     for (let amount of supported) {
-        if amount >= memory {
+        if (amount >= memory) {
             return amount
         }
     }
@@ -111,7 +111,7 @@ function atLeastMemoryForCpu(memory, cpu) {
     return supported[supported.length - 1]
 }
 
-function getEcsRunTaskParamsForJob(cluster, job) {
+async function getEcsRunTaskParamsForJob(cluster, job) {
     let taskParams = getDefaultEcsRunTaskParams(cluster, job);
 
     let taskDefinition = getAgentQueryRule("task-definition", job.agent_query_rules);
@@ -182,7 +182,7 @@ function getEcsRunTaskParamsForJob(cluster, job) {
                                 name: "BUILDKITE_PLUGINS_PATH",
                                 value: "/buildkite/plugins",
                             },
-                        ]
+                        ],
                         secrets: [
                             {
                                 name: "BUILDKITE_AGENT_TOKEN",
@@ -260,7 +260,7 @@ async function runTaskForBuildkiteJob(cluster, job) {
     for (var attempt = 1; attempt < 6; attempt++) {
         try {
             let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
-            let taskParams = getEcsRunTaskParamsForJob(cluster, job);
+            let taskParams = await getEcsRunTaskParamsForJob(cluster, job);
 
             console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask params=${JSON.stringify(taskParams)}`);
             let result = await ecs.runTask(taskParams).promise();
