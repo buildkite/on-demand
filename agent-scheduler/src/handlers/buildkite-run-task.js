@@ -151,7 +151,6 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
             let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
 
             // TODO add support for an iam-ssh-agent sidecar
-            let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
             let params = {
                 family: taskFamily,
                 executionRoleArn: process.env.DEFAULT_EXECUTION_ROLE_ARN,
@@ -227,8 +226,10 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                     "FARGATE",
                 ],
             };
+            console.log(JSON.stringify(params));
 
             // TODO handle error if the task definition already exists
+            let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
             let result = await ecs.registerTaskDefinition(params).promise();
             console.log(`${JSON.stringify(result)}`);
 
