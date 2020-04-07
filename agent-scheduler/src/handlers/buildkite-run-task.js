@@ -148,7 +148,7 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
             */
 
-            let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/, '')}`.substring(0, 255);
+            let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
 
             // TODO add support for an iam-ssh-agent sidecar
             let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
