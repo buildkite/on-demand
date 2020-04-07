@@ -156,8 +156,8 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 family: taskFamily,
                 executionRoleArn: process.env.DEFAULT_EXECUTION_ROLE_ARN,
                 networkMode: "awsvpc",
-                cpu: cpu,
-                memory: memory,
+                cpu: `${cpu}`,
+                memory: `${memory}`,
                 containerDefinitions: [
                     {
                         name: "agent",
