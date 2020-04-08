@@ -50,21 +50,6 @@ function getDefaultEcsRunTaskParams(cluster, job) {
     return params;
 }
 
-// cpu is user input, make sure this is a real cpu value
-function atLeastCpu(cpu) {
-    if (cpu <= 256) {
-        return 256
-    } else if (cpu <= 512) {
-        return 512
-    } else if (cpu <= 1024) {
-        return 1024
-    } else if (cpu <= 2048) {
-        return 2048
-    } else {
-        return 4096
-    }
-}
-
 function range(start, stop) {
     if (typeof stop == 'undefined') {
         // one param defined
@@ -96,19 +81,29 @@ function memoryRangeForCpu(cpu) {
     }
 }
 
-function atLeastMemoryForCpu(memory, cpu) {
-    // Find the first memory figure >= requested memory, otherwise the last
-    // memory amount.
+function cpuValues() {
+    return [256, 512, 1024, 2048, 4096]
+}
 
-    let supported = memoryRangeForCpu(cpu);
+function supportedCpuMemoryValues() {
+    return cpuValues()
+        .flatMap(cpu => {
+            return memoryRangeForCpu(cpu).map(memory => [cpu, memory])
+        });
+}
 
-    for (let amount of supported) {
-        if (amount >= memory) {
-            return amount
+function atLeastCpuMemory(requestedCpu, requestedMemory) {
+    let supported = supportedCpuMemoryValues();
+
+    for (let [cpu, memory] of supported) {
+        if (cpu < requestedCpu || memory < requestedMemory) {
+            continue
         }
+
+        return [cpu, memory]
     }
 
-    return supported[supported.length - 1]
+    return supported[supported.length - 1];
 }
 
 async function getEcsRunTaskParamsForJob(cluster, job) {
@@ -123,8 +118,14 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
     } else {
         let image = getAgentQueryRule("image", job.agent_query_rules);
         if (image != undefined) {
-            let cpu = atLeastCpu(parseInt(getAgentQueryRule("cpu", job.agent_query_rules)) || 256);
-            let memory = atLeastMemoryForCpu(parseInt(getAgentQueryRule("memory", job.agent_query_rules)) || 512, cpu);
+            let requestedCpu = parseInt(getAgentQueryRule("cpu", job.agent_query_rules) || 256);
+            let requestedMemory = parseInt(getAgentQueryRule("memory", job.agent_query_rules) || 512);
+
+            /*
+                Find the supported cpu memory combination that is at least
+                the cpu and memory requested.
+            */
+            let [cpu, memory] = atLeastCpuMemory(requestedCpu, requestedMemory);
 
             console.log(`fn=getEcsRunTaskParamsForJob image=${image} cpu=${cpu} memory=${memory}`);
 
