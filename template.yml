@@ -5,7 +5,7 @@
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Buildkite On-Demand Agent Scheduler
+  Buildkite On-Demand
 
 # Transform section specifies one or more macros that AWS CloudFormation uses to process your template
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
@@ -57,12 +57,8 @@ Parameters:
     Type: CommaDelimitedList
     Default: ''
     Description: Comma separated list of VPC subnets to launch agent containers in. If left blank a simple VPC with public subnets, suitable for most use cases, will be created.
-  SshAgentBackend:
-    Type: String
-    Default: ''
 
 Conditions:
-  IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
   CreateVpc: !Equals [ !Join [ ',', !Ref VpcSubnetIds ], '' ]
 
 Resources:
@@ -160,10 +156,10 @@ Resources:
       GroupId: !Ref 'FargateContainerSecurityGroup'
       IpProtocol: -1
       CidrIpv6: ::/0
-  # ECS Resources
-  ECSCluster:
+
+  EcsCluster:
     Type: AWS::ECS::Cluster
-  # SSM Resources
+
   BuildkiteAgentTokenParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -171,175 +167,25 @@ Resources:
       Type: String
       Value: !Ref BuildkiteAgentToken
 
-  RunTaskQueue:
-    Type: AWS::SQS::Queue
+  Scheduler:
+    Type: AWS::Serverless::Application
     Properties:
-      VisibilityTimeout: 300
-  
-  BuildkiteRunTask:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: A Lambda function that dequeues Buildkite Job Scheduled notifications and runs an ECS task for them
-      Runtime: nodejs12.x
-      Handler: buildkite-run-task.handler
-      CodeUri: src/handlers/
-      Events:
-        SQSQueueEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt RunTaskQueue.Arn
-            BatchSize: 1
-      MemorySize: 128
-      Timeout: 105
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - SQSPollerPolicy:
-            QueueName: !GetAtt RunTaskQueue.QueueName
-        - Statement:
-          - Effect: Allow
-            Action:
-              - ecs:RunTask
-              - ecs:RegisterTaskDefinition
-            Resource: "*"
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentExecution/*
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask/*
-          Version: "2012-10-17"
-      Environment:
-        Variables:
-          ECS_CLUSTER_NAME: !Ref ECSCluster
-          VPC_SUBNETS: !If [ CreateVpc, !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ], !Join [ ',', !Ref VpcSubnetIds ] ]
-          TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
-          DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
-          IAM_SSH_AGENT_BACKEND_URL:
-            !If
-              - IncludeSshAgent
-              - {
-                  "Fn::Sub": [
-                    "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}",
-                    {
-                      ApiId: {
-                        "Fn::Select": [
-                          5,
-                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
-                        ]
-                      },
-                      Region: {
-                        "Fn::Select": [
-                          3,
-                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
-                        ]
-                      },
-                      Stage: {
-                        "Fn::Select": [
-                          1,
-                          { "Fn::Split": [ "/", !Ref SshAgentBackend ] }
-                        ]
-                      },
-                    },
-                  ]
-                }
-              - !Ref AWS::NoValue
-  RunTaskLogGroup:
-    Type: AWS::Logs::LogGroup
-    DependsOn: BuildkiteRunTask
-    Properties:
-      RetentionInDays: 1
-      LogGroupName:
-        !Sub
-        - '/aws/lambda/${LambdaName}'
-        - LambdaName: !Ref BuildkiteRunTask
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:832577133680:applications/buildkite-on-demand-scheduler
+        SemanticVersion: '0.1.0'
+      Parameters:
+        BuildkiteAgentTokenParameterPath: !Ref BuildkiteAgentTokenParameter
+        BuildkiteQueue: !Ref BuildkiteQueue
+        EventBridgeBusName: !Ref EventBridgeBusName
+        VpcSubnetIds: !Join [ ',', [ !Ref PublicSubnetOne, !Ref PublicSubnetTwo ] ]
+        EcsClusterName: !Ref EcsCluster
 
-  DefaultExecutionRole:
-    Type: AWS::IAM::Role
+  Macro:
+    Type: AWS::Serverless::Application
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: [ecs-tasks.amazonaws.com]
-            Action: ['sts:AssumeRole']
-      Path: /BuildkiteAgentExecution/
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-      Policies:
-        - PolicyName: FetchDecryptSecrets
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ssm:GetParameter'
-                  - 'ssm:GetParameters'
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token
-              - Effect: Allow
-                Action: kms:Decrypt
-                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                  - logs:DescribeLogStreams
-                Resource:
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/ecs/ondemand-*
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/ecs/ondemand-*:log-stream:*
-
-  BuildkiteScheduleTask:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge.
-      Runtime: nodejs12.x
-      Handler: buildkite-schedule-task.handler
-      CodeUri: src/handlers/
-      Events:
-        EventBridge:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBridgeBusName
-            InputPath: $.detail
-            Pattern:
-              detail-type:
-                - "Job Scheduled"
-      MemorySize: 128
-      Timeout: 10
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt RunTaskQueue.QueueName
-      Environment:
-        Variables:
-          SQS_QUEUE_URL: !Ref RunTaskQueue
-          BUILDKITE_QUEUE: !Ref BuildkiteQueue
-  ScheduleTaskLogGroup:
-    Type: AWS::Logs::LogGroup
-    DependsOn: BuildkiteScheduleTask
-    Properties:
-      RetentionInDays: 1
-      LogGroupName:
-        !Sub
-        - '/aws/lambda/${LambdaName}'
-        - LambdaName: !Ref BuildkiteScheduleTask
-
-  BuildkiteEventsLog:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: "/aws/events/Buildkite"
-      RetentionInDays: 1
-
-  BuildkiteEventsLogRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: Log
-      Description: Log all Buildkite events to a CloudWatch Log Group
-      EventBusName: !Ref EventBridgeBusName
-      EventPattern:
-        account:
-          - !Ref 'AWS::AccountId'
-      Targets:
-        - Id: Log
-          Arn: !GetAtt BuildkiteEventsLog.Arn
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:832577133680:applications/buildkite-on-demand-transform
+        SemanticVersion: '0.1.1'
 
 Outputs:
   BuildkiteAgentTokenParameterPath:
