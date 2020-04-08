@@ -225,6 +225,7 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                         command: [
                             'echo container=agent-init at=initalised',
                         ],
+                        logConfiguration: logConfiguration,
                     }
                 ],
                 requiresCompatibilities: [
