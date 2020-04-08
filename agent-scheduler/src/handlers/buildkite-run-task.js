@@ -130,25 +130,23 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
             console.log(`fn=getEcsRunTaskParamsForJob image=${image} cpu=${cpu} memory=${memory}`);
 
             /*
-                Synthesise a task definition
+                Synthesise a task definition for this image, cpu and memory.
                 
                 1. Generate a task definition name.
                 2. Call ecs:RegisterTaskDefinition with agent sidecar (and iam-ssh-agent sidecar)
-
-                Check whether it exists first and then create?
-                or
-                Create first and handle duplicate task family error?
             */
 
-            // Up to 255 letters (uppercase and lowercase), numbers, and hyphens are allowed.
-
             /*
+                Generate a name for this task family.
+
+                Up to 255 letters (uppercase and lowercase), numbers, and
+                hyphens are allowed.
+
                 Image could be:
                 012345678910.dkr.ecr.us-east-1.amazonaws.com/agent/buildkite:latest
                 quay.io/organization/image
                 keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
             */
-
             let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
 
             let logConfiguration = {
