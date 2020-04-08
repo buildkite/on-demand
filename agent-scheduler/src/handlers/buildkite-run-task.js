@@ -290,13 +290,21 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
             }
             params.containerDefinitions.push(agentContainer);
 
-            // TODO handle error if the task definition already exists
+            /*
+                AWS will store up to 1,000,000 task definition revisions.
+
+                https://docs.aws.amazon.com/general/latest/gr/ecs-service.html#limits_ecs
+
+                The docs say unregistering does nothing for this limit.
+
+                To escape the limit the naming scheme needs a random element.
+            */
             let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
             let result = await ecs.registerTaskDefinition(params).promise();
-            console.log(`${JSON.stringify(result)}`);
 
-            console.log(`fn=getEcsRunTaskParamsForJob image=${image} taskDefinition=${taskFamily}`);
-            taskParams.taskDefinition = taskFamily;
+            let taskDefinition = `${result.taskDefinition.family}:${result.taskDefinition.revision}`;
+            console.log(`fn=getEcsRunTaskParamsForJob image=${image} taskDefinition=${taskDefinition}`);
+            taskParams.taskDefinition = taskDefinition;
         }
     }
 
