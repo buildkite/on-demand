@@ -67,7 +67,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:us-east-1:832577133680:applications/buildkite-on-demand-scheduler
-        SemanticVersion: '0.1.1'
+        SemanticVersion: '0.1.2'
       Parameters:
         BuildkiteAgentTokenParameterPath: !Ref BuildkiteAgentTokenParameter
         BuildkiteQueue: !Ref BuildkiteQueue
