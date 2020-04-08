@@ -147,7 +147,19 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 quay.io/organization/image
                 keithduncan/agent@sha256:94afd1f2e64d908bc90dbca0035a5b567EXAMPLE
             */
-            let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
+
+            /*
+                Sticking the year and month in the name gives us 1,000,000 per
+                month or ~32,000 builds per image tag per day. More than enough
+                for anyone!
+
+                If anyone needs more significant bits we can add the day.
+            */
+            let date = new Date;
+            let year = (new Intl.DateTimeFormat('en-US-POSIX', { year: 'numeric' })).format(date);
+            let month = (new Intl.DateTimeFormat('en-US-POSIX', { month: '2-digit' })).format(date);
+
+            let taskFamily = `ondemand-${year}${month}-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
 
             let logConfiguration = {
                 logDriver: "awslogs",
