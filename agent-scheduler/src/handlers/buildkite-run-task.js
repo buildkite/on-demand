@@ -190,11 +190,10 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 ],
             }
 
-            let includeSshAgent = false;
-            if (includeSshAgent) {
-                // TODO this should be an environment variable of the lambda
-                let iamSshAgentBackendUrl = undefined;
+            let iamSshAgentBackendUrl = process.env.IAM_SSH_AGENT_BACKEND_URL;
+            let includeSshAgent = (iamSshAgentBackendUrl != undefined);
 
+            if (includeSshAgent) {
                 params.containerDefinitions.push({
                     name: "ssh-agent",
                     image: "keithduncan/iam-ssh-agent:0.2",

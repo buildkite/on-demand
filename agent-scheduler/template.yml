@@ -57,8 +57,12 @@ Parameters:
     Type: CommaDelimitedList
     Default: ''
     Description: Comma separated list of VPC subnets to launch agent containers in. If left blank a simple VPC with public subnets, suitable for most use cases, will be created.
+  SshAgentBackend:
+    Type: String
+    Default: ''
 
 Conditions:
+  IncludeSshAgent: !Not [ !Equals [ !Ref SshAgentBackend, '' ] ]
   CreateVpc: !Equals [ !Join [ ',', !Ref VpcSubnetIds ], '' ]
 
 Resources:
@@ -203,6 +207,35 @@ Resources:
           VPC_SUBNETS: !If [ CreateVpc, !Join [ ',', [ !Ref PublicSubnetOne , !Ref PublicSubnetTwo ] ], !Join [ ',', !Ref VpcSubnetIds ] ]
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
           DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
+          IAM_SSH_AGENT_BACKEND_URL:
+            !If
+              - IncludeSshAgent
+              - {
+                  "Fn::Sub": [
+                    "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}",
+                    {
+                      ApiId: {
+                        "Fn::Select": [
+                          5,
+                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
+                        ]
+                      },
+                      Region: {
+                        "Fn::Select": [
+                          3,
+                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
+                        ]
+                      },
+                      Stage: {
+                        "Fn::Select": [
+                          1,
+                          { "Fn::Split": [ "/", !Ref SshAgentBackend ] }
+                        ]
+                      },
+                    },
+                  ]
+                }
+              - !Ref AWS::NoValue
   RunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: BuildkiteRunTask
