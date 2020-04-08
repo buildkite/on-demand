@@ -204,8 +204,9 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                             logDriver: "awslogs",
                             options: {
                                 "awslogs-region": process.env.AWS_REGION,
-                                // TODO give this new task definition a log group
-                                "awslogs-group": "/aws/ecs/buildkite",
+                                // Log group names can be up to 512 characters,
+                                // including / a-z A-Z.
+                                "awslogs-group": `/aws/ecs/${taskFamily}`,
                                 "awslogs-stream-prefix": "ecs",
                             }
                         }
