@@ -151,6 +151,18 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
 
             let taskFamily = `ondemand-${image.replace(/[^a-zA-Z0-9]/gi, '')}`.substring(0, 255);
 
+            let logConfiguration = {
+                logDriver: "awslogs",
+                options: {
+                    "awslogs-region": process.env.AWS_REGION,
+                    // Log group names can be up to 512 characters,
+                    // including / a-z A-Z.
+                    "awslogs-group": `/aws/ecs/${taskFamily}`,
+                    "awslogs-stream-prefix": "ecs",
+                    "awslogs-create-group": "true",
+                }
+            };
+
             // TODO add support for an iam-ssh-agent sidecar
             let params = {
                 family: taskFamily,
@@ -200,16 +212,7 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                                 condition: "SUCCESS",
                             }
                         ],
-                        logConfiguration: {
-                            logDriver: "awslogs",
-                            options: {
-                                "awslogs-region": process.env.AWS_REGION,
-                                // Log group names can be up to 512 characters,
-                                // including / a-z A-Z.
-                                "awslogs-group": `/aws/ecs/${taskFamily}`,
-                                "awslogs-stream-prefix": "ecs",
-                            }
-                        }
+                        logConfiguration: logConfiguration,
                     },
                     {
                         name: "agent-init",
