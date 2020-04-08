@@ -1,14 +1,7 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   Buildkite On-Demand
 
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
 Transform:
 - AWS::Serverless-2016-10-31
 
@@ -30,15 +23,6 @@ Metadata:
     ParameterLabels:
       VpcSubnetIds:
         default: "(Optional) Which VPC subnets should agent containers run in?"
-
-Mappings:
-  SubnetConfig:
-    VPC:
-      CIDR: '10.0.0.0/16'
-    PublicOne:
-      CIDR: '10.0.0.0/24'
-    PublicTwo:
-      CIDR: '10.0.1.0/24'
 
 Parameters:
   EventBridgeBusName:
@@ -62,100 +46,11 @@ Conditions:
   CreateVpc: !Equals [ !Join [ ',', !Ref VpcSubnetIds ], '' ]
 
 Resources:
-  # VPC Resources
-  VPC:
-    Type: AWS::EC2::VPC
+  Vpc:
+    Type: AWS::CloudFormation::Stack
     Condition: CreateVpc
     Properties:
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      CidrBlock: !FindInMap ['SubnetConfig', 'VPC', 'CIDR']
-  PublicSubnetOne:
-    Type: AWS::EC2::Subnet
-    Condition: CreateVpc
-    Properties:
-      AvailabilityZone:
-         Fn::Select:
-         - 0
-         - Fn::GetAZs: !Ref 'AWS::Region'
-      VpcId: !Ref 'VPC'
-      CidrBlock: !FindInMap ['SubnetConfig', 'PublicOne', 'CIDR']
-      MapPublicIpOnLaunch: true
-  PublicSubnetTwo:
-    Type: AWS::EC2::Subnet
-    Condition: CreateVpc
-    Properties:
-      AvailabilityZone:
-         Fn::Select:
-         - 1
-         - Fn::GetAZs: !Ref 'AWS::Region'
-      VpcId: !Ref 'VPC'
-      CidrBlock: !FindInMap ['SubnetConfig', 'PublicTwo', 'CIDR']
-      MapPublicIpOnLaunch: true
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Condition: CreateVpc
-  GatewayAttachement:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Condition: CreateVpc
-    Properties:
-      VpcId: !Ref 'VPC'
-      InternetGatewayId: !Ref 'InternetGateway'
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Condition: CreateVpc
-    Properties:
-      VpcId: !Ref 'VPC'
-  PublicRoute:
-    Type: AWS::EC2::Route
-    Condition: CreateVpc
-    DependsOn: GatewayAttachement
-    Properties:
-      RouteTableId: !Ref 'PublicRouteTable'
-      DestinationCidrBlock: '0.0.0.0/0'
-      GatewayId: !Ref 'InternetGateway'
-  PublicSubnetOneRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: CreateVpc
-    Properties:
-      SubnetId: !Ref PublicSubnetOne
-      RouteTableId: !Ref PublicRouteTable
-  PublicSubnetTwoRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: CreateVpc
-    Properties:
-      SubnetId: !Ref PublicSubnetTwo
-      RouteTableId: !Ref PublicRouteTable
-  FargateContainerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Condition: CreateVpc
-    Properties:
-      GroupDescription: Access to the Fargate containers
-      VpcId: !Ref 'VPC'
-  EcsSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Condition: CreateVpc
-    Properties:
-      Description: Ingress from self
-      GroupId: !Ref 'FargateContainerSecurityGroup'
-      IpProtocol: -1
-      SourceSecurityGroupId: !Ref 'FargateContainerSecurityGroup'
-  EcsSecurityGroupEgressV4:
-    Type: AWS::EC2::SecurityGroupEgress
-    Condition: CreateVpc
-    Properties:
-      Description: Egress to anywhere IPv4
-      GroupId: !Ref 'FargateContainerSecurityGroup'
-      IpProtocol: -1
-      CidrIp: 0.0.0.0/0
-  EcsSecurityGroupEgressV6:
-    Type: AWS::EC2::SecurityGroupEgress
-    Condition: CreateVpc
-    Properties:
-      Description: Egress to anywhere IPv6
-      GroupId: !Ref 'FargateContainerSecurityGroup'
-      IpProtocol: -1
-      CidrIpv6: ::/0
+      TemplateURL: vpc.yml
 
   EcsCluster:
     Type: AWS::ECS::Cluster
@@ -177,7 +72,7 @@ Resources:
         BuildkiteAgentTokenParameterPath: !Ref BuildkiteAgentTokenParameter
         BuildkiteQueue: !Ref BuildkiteQueue
         EventBridgeBusName: !Ref EventBridgeBusName
-        VpcSubnetIds: !Join [ ',', [ !Ref PublicSubnetOne, !Ref PublicSubnetTwo ] ]
+        VpcSubnetIds: !If [ CreateVpc, !GetAtt Vpc.Outputs.VpcSubnetIds, !Ref VpcSubnetIds ]
         EcsClusterName: !Ref EcsCluster
 
   Macro:
