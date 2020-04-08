@@ -232,7 +232,6 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                     "FARGATE",
                 ],
             };
-            console.log(JSON.stringify(params));
 
             // TODO handle error if the task definition already exists
             let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
@@ -276,7 +275,7 @@ async function runTaskForBuildkiteJob(cluster, job) {
             return result;
         }
         catch (e) {
-            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${JSON.stringify(e)}`);
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${e}`);
             
             await sleep(1000 * Math.pow(attempt, 2));
             
