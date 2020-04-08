@@ -170,7 +170,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function that dequeues Buildkite Job Scheduled notifications and runs an ECS task for them
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       Handler: buildkite-run-task.handler
       CodeUri: src/handlers/
       Events:
@@ -251,7 +251,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge.
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       Handler: buildkite-schedule-task.handler
       CodeUri: src/handlers/
       Events:
