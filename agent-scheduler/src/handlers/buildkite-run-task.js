@@ -163,7 +163,6 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 }
             };
 
-            // TODO add support for an iam-ssh-agent sidecar
             let params = {
                 family: taskFamily,
                 executionRoleArn: process.env.DEFAULT_EXECUTION_ROLE_ARN,
@@ -171,49 +170,6 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 cpu: `${cpu}`,
                 memory: `${memory}`,
                 containerDefinitions: [
-                    {
-                        name: "agent",
-                        image: image,
-                        essential: true,
-                        entryPoint: [
-                            "/buildkite/bin/buildkite-agent"
-                        ],
-                        command: [
-                            "start",
-                        ],
-                        environment: [
-                            {
-                                name: "BUILDKITE_BUILD_PATH",
-                                value: "/buildkite/builds",
-                            },
-                            {
-                                name: "BUILDKITE_HOOKS_PATH",
-                                value: "/buildkite/hooks",
-                            },
-                            {
-                                name: "BUILDKITE_PLUGINS_PATH",
-                                value: "/buildkite/plugins",
-                            },
-                        ],
-                        secrets: [
-                            {
-                                name: "BUILDKITE_AGENT_TOKEN",
-                                valueFrom: "/buildkite/agent-token",
-                            }
-                        ],
-                        volumesFrom: [
-                            {
-                                sourceContainer: "agent-init",
-                            }
-                        ],
-                        dependsOn: [
-                            {
-                                containerName: "agent-init",
-                                condition: "SUCCESS",
-                            }
-                        ],
-                        logConfiguration: logConfiguration,
-                    },
                     {
                         name: "agent-init",
                         image: "keithduncan/buildkite-sidecar",
@@ -226,12 +182,114 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                             'echo container=agent-init at=initalised',
                         ],
                         logConfiguration: logConfiguration,
-                    }
+                    },
                 ],
+                volumes: [],
                 requiresCompatibilities: [
                     "FARGATE",
                 ],
+            }
+
+            let includeSshAgent = false;
+            if (includeSshAgent) {
+                // TODO this should be an environment variable of the lambda
+                let iamSshAgentBackendUrl = undefined;
+
+                params.containerDefinitions.push({
+                    name: "ssh-agent",
+                    image: "keithduncan/iam-ssh-agent:0.2",
+                    essential: true,
+                    command: [
+                        'iam-ssh-agent',
+                        'daemon',
+                        '--bind-to=/ssh/socket',
+                    ],
+                    logConfiguration: logConfiguration,
+                    environment: [
+                        {
+                            name: "IAM_SSH_AGENT_BACKEND_URL",
+                            value: iamSshAgentBackendUrl,
+                        }
+                    ],
+                    healthCheck: {
+                        command: [
+                            'test',
+                            '-S',
+                            '/ssh/socket',
+                        ],
+                    },
+                    mountPoints: [
+                        {
+                            sourceVolume: "ssh-agent",
+                            containerPath: "/ssh",
+                        }
+                    ],
+                });
+
+                params.volumes.push({
+                    name: "ssh-agent",
+                });
+            }
+
+            let agentContainer = {
+                name: "agent",
+                image: image,
+                essential: true,
+                entryPoint: [
+                    "/buildkite/bin/buildkite-agent"
+                ],
+                command: [
+                    "start",
+                ],
+                environment: [
+                    {
+                        name: "BUILDKITE_BUILD_PATH",
+                        value: "/buildkite/builds",
+                    },
+                    {
+                        name: "BUILDKITE_HOOKS_PATH",
+                        value: "/buildkite/hooks",
+                    },
+                    {
+                        name: "BUILDKITE_PLUGINS_PATH",
+                        value: "/buildkite/plugins",
+                    },
+                ],
+                secrets: [
+                    {
+                        name: "BUILDKITE_AGENT_TOKEN",
+                        valueFrom: "/buildkite/agent-token",
+                    }
+                ],
+                volumesFrom: [
+                    {
+                        sourceContainer: "agent-init",
+                    }
+                ],
+                dependsOn: [
+                    {
+                        containerName: "agent-init",
+                        condition: "SUCCESS",
+                    }
+                ],
+                logConfiguration: logConfiguration,
+                mountPoints: [],
             };
+            if (includeSshAgent) {
+                agentContainer.environment.push({
+                    name: "SSH_AUTH_SOCK",
+                    value: "/ssh/socket"
+                });
+                agentContainer.mountPoints.push({
+                    sourceVolume: "ssh-agent",
+                    containerPath: "/ssh",
+                });
+                agentContainer.dependsOn.push({
+                    containerName: "ssh-agent",
+                    condition: "HEALTHY",
+                });
+            }
+            params.containerDefinitions.push(agentContainer);
 
             // TODO handle error if the task definition already exists
             let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
