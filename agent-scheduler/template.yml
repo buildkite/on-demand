@@ -44,6 +44,13 @@ Parameters:
   EcsClusterName:
     Type: String
     Description: Name of the ECS Cluster to schedule task definitions in.
+  SshAgentBackend:
+    Type: String
+    Default: ''
+    Description: (Optional) API Gateway Stage ARN for an iam-ssh-agent backend.
+
+Conditions:
+  IncludeSshAgent: !Not [ !Equals [  !Ref SshAgentBackend, '' ] ]
 
 Resources:
   BuildkiteScheduleTask:
