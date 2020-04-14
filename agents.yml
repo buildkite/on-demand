@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite On-Demand Agents
+
+Transform: Buildkite-Agents-2020-03-09
+
+Resources:
+  Default:
+    Type: Buildkite::ECS::TaskDefinition
+    Properties:
+      Image: keithduncan/buildkite-base
+      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      TaskFamily: buildkite

@@ -82,9 +82,8 @@ Resources:
         ApplicationId: arn:aws:serverlessrepo:us-east-1:832577133680:applications/buildkite-on-demand-transform
         SemanticVersion: '0.1.1'
 
-Outputs:
-  BuildkiteAgentTokenParameterPath:
-    Description: The Systems Manager Parameter Store path that the Buildkite Agent Registration token is stored in.
-    Value: /buildkite/agent-token
-    Export:
-      Name: !Sub ${AWS::StackName}-BuildkiteAgentTokenParameterPath
+  Agents:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Macro
+    Properties:
+      TemplateURL: agents.yml
