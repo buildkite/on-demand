@@ -141,3 +141,8 @@ to help create ECS Task Definitions that can be scheduled on-demand by
 
 [agent-composer/transform](agent-composer/transform) is an AWS CloudFormation
 Macro that makes writing Buildkite Agent `AWS::ECS::TaskDefinitions` simple.
+
+## template
+
+[template] is a git submodule for [keithduncan/buildkite-on-demand-template](https://github.com/keithduncan/buildkite-on-demand-template).
+This is a template repository so forks are disconnected from this repository.
