@@ -148,5 +148,5 @@ Macro that makes writing Buildkite Agent `AWS::ECS::TaskDefinitions` simple.
 
 ## template
 
-[template] is a git submodule for [keithduncan/buildkite-on-demand-template](https://github.com/keithduncan/buildkite-on-demand-template).
+[template](template) is a git submodule for [keithduncan/buildkite-on-demand-template](https://github.com/keithduncan/buildkite-on-demand-template).
 This is a template repository so forks are disconnected from this repository.
