@@ -38,24 +38,26 @@ TBD
 
 # Modular Design
 
-The On-Demand template combines several components to give you a quick off the
-shelf experience. If you want to customise how these components are combined,
-you can fork the [template repository](https://github.com/keithduncan/buildkite-on-demand-template).
+The default On-Demand template combines several components to give you a simple
+off the shelf experience. If you want to customise how these components are
+combined, you can fork the [template repository](https://github.com/keithduncan/buildkite-on-demand-template). The default template includes:
 
-- A default VPC with two public subnets and an Internet Gateway.
-	- You can overridden this behaviour by providing a comma separated list of
-	VPC Subnet IDs in the `VpcSubnetIds` parameter.
-	- For more complex designs or you may want to swap out the entire VPC
-	substack with something of your own design.
-- A `String` SSM Parameter for your Buildkite Agent Registration Token
-	- CloudFormation cannot create `SecureString` parameters, if you want to
-	store this token securely you can create it yourself and pass a different
-	parameter path to the `agent-scheduler` stack.
-- A CloudFormation Macro and `agents` substack
+- A simple VPC with two public subnets and an Internet Gateway.
+	- You can override this behaviour by providing a comma separated list of
+	VPC Subnet IDs in the optional `VpcSubnetIds` parameter.
+	- For more complex VPC designs or you may want to swap out the entire VPC
+	substack with something of your own design, or `!ImportValue` from an
+	existing VPC CloudFormation stack.
+- A `String` SSM Parameter for your Buildkite Agent Registration Token.
+	- CloudFormation cannot currently create `SecureString` parameters, if you
+	want to store this token securely you can create it yourself and pass a
+	different parameter path to the `agent-scheduler` stack.
+- An `agents` substack and CloudFormation Macro.
 	- Using a substack to define your agent task definitions and task roles
 	ensures your infrastructure is continuously deployable. The CloudFormation
-	macro makes writing these task definitions even easier. This component is
-	entirely optional and you can swap in any technology you want.
+	Macro makes writing these task definitions easy. This component is
+	entirely optional, you could create your task definitions using the
+	technology stack you are most comfortable with.
 
 # Subprojects
 
