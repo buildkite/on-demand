@@ -29,7 +29,9 @@ function getAgentQueryRule(rule, agentQueryRules) {
 exports.handler = async (webhook) => {
     console.log(`fn=handler event=${JSON.stringify(webhook)}`);
     
-    let queue = getAgentQueryRule("queue", webhook.job.agent_query_rules);
+    let job = webhook.job;
+
+    let queue = getAgentQueryRule("queue", job.agent_query_rules);
     let expectedQueue = process.env.BUILDKITE_QUEUE;
     if (queue != expectedQueue) {
         console.log(`fn=handler at=job_ignored`);
@@ -42,7 +44,7 @@ exports.handler = async (webhook) => {
         };
     }
     
-    let runTask = await scheduleRunTaskForBuildkiteJob(webhook.job);
+    let runTask = await scheduleRunTaskForBuildkiteJob(job);
     console.log(`fn=handler at=job_scheduled`);
     
     return {
