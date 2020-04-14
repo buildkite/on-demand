@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  buildkite-on-demand-transform
+  Buildkite On-Demand CloudFormation Macro
 
   A CloudFormation Macro to make defining Buildkite Agent ECS Task Definitions easy.
 
