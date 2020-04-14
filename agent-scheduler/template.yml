@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Buildkite On-Demand Agent Scheduler
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Buildkite
+        Parameters:
+          - BuildkiteAgentTokenParameterPath
+          - BuildkiteQueue
+      -
+        Label:
+          default: AWS
+        Parameters:
+          - EventBridgeBusName
+          - VpcSubnetIds
+          - EcsClusterName
+    ParameterLabels:
+      VpcSubnetIds:
+        default: "Which VPC subnets should agent containers be scheduled in?"
+
+Parameters:
+  EventBridgeBusName:
+    Type: String
+    Description: Name of an EventBridge Bus in this region that receives Buildkite Partner Events, see https://buildkite.com/docs/integrations/amazon-eventbridge.
+    AllowedPattern: ^[a-zA-Z0-9\-\._/]+
+  BuildkiteQueue:
+    Type: String
+    Description: Queue name that agents will be scheduled for on-demand, targeted in pipeline steps using an agent query rule "queue={value}".
+    AllowedPattern: ^[a-zA-Z0-9\-_]{1,255}
+  BuildkiteAgentTokenParameterPath:
+    Type: AWS::SSM::Parameter::Name
+    Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
+    Default: /buildkite/agent-token
+  VpcSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of VPC subnets to launch agent containers in.
+  EcsClusterName:
+    Type: String
+    Description: Name of the ECS Cluster to schedule task definitions in.
+
+Resources:
+  BuildkiteScheduleTask:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge Partner Event Source and enqueues them on an SQS queue.
+      Runtime: nodejs10.x
+      Handler: buildkite-schedule-task.handler
+      CodeUri: src/handlers/
+      Events:
+        EventBridge:
+          Type: CloudWatchEvent
+          Properties:
+            EventBusName: !Ref EventBridgeBusName
+            InputPath: $.detail
+            Pattern:
+              detail-type:
+                - "Job Scheduled"
+      MemorySize: 128
+      Timeout: 10
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt RunTaskQueue.QueueName
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref RunTaskQueue
+          BUILDKITE_QUEUE: !Ref BuildkiteQueue
+  ScheduleTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: BuildkiteScheduleTask
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        !Sub
+        - '/aws/lambda/${LambdaName}'
+        - LambdaName: !Ref BuildkiteScheduleTask
+
+  RunTaskQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+  
+  BuildkiteRunTask:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that dequeues Buildkite Job Scheduled notifications from an SQS queue and runs an ECS task for them.
+      Runtime: nodejs10.x
+      Handler: buildkite-run-task.handler
+      CodeUri: src/handlers/
+      Events:
+        SQSQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RunTaskQueue.Arn
+            BatchSize: 1
+      MemorySize: 128
+      Timeout: 105
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSPollerPolicy:
+            QueueName: !GetAtt RunTaskQueue.QueueName
+        - Statement:
+          - Effect: Allow
+            Action: ecs:RunTask
+            Resource: "*"
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentExecution/*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask/*
+          Version: "2012-10-17"
+      Environment:
+        Variables:
+          ECS_CLUSTER_NAME: !Ref EcsClusterName
+          VPC_SUBNETS: !Join [ ',', !Ref VpcSubnetIds ]
+          TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
+  RunTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: BuildkiteRunTask
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        !Sub
+        - '/aws/lambda/${LambdaName}'
+        - LambdaName: !Ref BuildkiteRunTask
+
+  BuildkiteEventsLog:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/events/Buildkite
+      RetentionInDays: 1
+
+  BuildkiteEventsLogRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: Log
+      Description: Log all Buildkite events to a CloudWatch Log Group
+      EventBusName: !Ref EventBridgeBusName
+      EventPattern:
+        account:
+          - !Ref 'AWS::AccountId'
+      Targets:
+        - Id: Log
+          Arn: !GetAtt BuildkiteEventsLog.Arn
