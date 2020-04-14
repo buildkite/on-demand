@@ -1,10 +1,10 @@
 # agent-scheduler
 
 This project contains source code and supporting files for scheduling Buildkite
-Agents on-demand with AWS Elastic Container Service, in response to builds.
+Agents using AWS Elastic Container Service in response to builds.
 
-- `src` - Code for the Lambda functions. These have been inlined into `template.yml` for easier stack creation in any region.
-- `source.yml` - A CloudFormation template that defines the AWS resources.
+- `src` - Code for the Lambda functions.
+- `template.yml` - A CloudFormation template that defines the AWS resources.
 
 ## Prerequisites
 
@@ -49,13 +49,12 @@ schedule agents in.
 When creating the stack you will need to check the option to acknowledge that
 the app creates custom IAM roles.
 
-## Deploy using the AWS Serverless Application Model on the command line
+## Deploy using the AWS Serverless Application Model command line interface
 
-The AWS SAM CLI is an extension of the AWS CLI that adds functionality for building and testing Lambda applications.
-
-To use the AWS SAM CLI, you need the following tools:
-
-* AWS SAM CLI - [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were written using SAM Version 0.40.0.
+The AWS SAM CLI is an extension of the AWS CLI that adds functionality for
+building and testing Lambda applications. See the Amazon documentation for help
+[installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were
+written using SAM Version 0.40.0.
 
 To deploy `agent-scheduler` for the first time, run the following in your shell:
 
@@ -63,8 +62,8 @@ To deploy `agent-scheduler` for the first time, run the following in your shell:
 sam deploy --capabilities CAPABILITY_IAM --guided
 ```
 
-This command will package and deploy `agent-scheduler` to your AWS account, with
-a series of prompts.
+This command will package and deploy `agent-scheduler` to your AWS account, and
+present you with a series of prompts:
 
 * **Stack Name**: The name of the stack to deploy to CloudFormation. This should
 be unique to your account and region, something like

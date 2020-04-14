@@ -54,9 +54,51 @@ use cases, will be created automatically.
 When creating the stack you will need to check the option to acknowledge that
 the stack creates custom IAM roles.
 
-### Deploy using the AWS CloudFormation command line interface
+### Deploy using the AWS Serverless Application Model command line interface
 
-TBD
+The AWS SAM CLI is an extension of the AWS CLI that will auto-upload any
+substacks before applying your template. See the Amazon documentation for help
+[installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were
+written using SAM Version 0.47.0.
+
+```bash
+$ sam deploy --guided --template-file template/template.yml
+```
+
+This command will package and deploy the on-demand template to your AWS account,
+and present you with a series of prompts:
+
+* **Stack Name**: The name of the CloudFormation stack to deploy. This should
+be unique to your account and region, something like
+`buildkite-on-demand`. You will use this stack name when updating your template
+in the future.
+* **AWS Region**: The AWS region you want to deploy your on-demand agents to. Buildkite On-Demand can be deployed to multiple regions allowing you to target specific
+regions using Buildkite Agent Query Rules.
+* **Parameter EventBridgeBusName**: The name of the Amazon EventBridge Bus
+associated with a Buildkite Partner Event source **NB** you provide the name of
+the EventBus name _not_ the EventBus ARN.
+* **Parameter BuildkiteQueue**: The name of the Buildkite queue this stack will
+service. You will use this queue name in your Buildkite Pipeline Agent Query
+rules e.g. `queue=my-queue-name`.
+* **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for
+this deployment to use. This will be stored in a `String` type AWS SSM
+Parameter. See the
+[Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens)
+for details.
+* **Parameter VpcSubnetIds**: Optional, a comma separated list of VPC subnet IDs
+to schedule agents in. If left blank the default simple VPC, suitable for most
+use cases, will be created automatically.
+* **Confirm changes before deploy**: If set to yes, any change sets will be
+shown to you before execution for manual review. If set to no, the AWS SAM CLI
+will automatically deploy changes.
+* **Allow SAM CLI IAM role creation**: You must answer **no** to this prompt to
+customise the capabilities.
+* **Capabilities [['CAPABILITY_IAM']]**: Enter
+`CAPABILITY_IAM CAPABILITY_AUTO_EXPAND` to grant permission to create IAM roles
+and use the CloudFormation Macro to transform the agent substack.
+* **Save arguments to samconfig.toml**: Set to yes so your choices are saved to
+a configuration file inside the project. In the future you can just re-run
+`sam deploy` without parameters to deploy changes.
 
 # Modular Design
 
