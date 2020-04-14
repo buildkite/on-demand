@@ -267,7 +267,7 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 secrets: [
                     {
                         name: "BUILDKITE_AGENT_TOKEN",
-                        valueFrom: "/buildkite/agent-token",
+                        valueFrom: process.env.BUILDKITE_AGENT_TOKEN_PARAMETER_PATH,
                     }
                 ],
                 volumesFrom: [

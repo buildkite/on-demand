@@ -124,6 +124,7 @@ Resources:
           VPC_SUBNETS: !Join [ ',', !Ref VpcSubnetIds ]
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
           DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
+          BUILDKITE_AGENT_TOKEN_PARAMETER_PATH: !Ref BuildkiteAgentTokenParameterPath
           IAM_SSH_AGENT_BACKEND_URL:
             !If
               - IncludeSshAgent
