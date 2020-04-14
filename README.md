@@ -32,6 +32,28 @@ browser or the AWS CLI in your terminal.
 
 [![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=buildkite-on-demand&templateURL=https://buildkite-on-demand-us-east-1.s3.amazonaws.com/on-demand/latest/template.yml)
 
+The CloudFormation console will ask you for values for the following parameters:
+
+* **Stack Name**: Must be unique per account per region. Use something
+descriptive, the default value of buildkite-on-demand is fine.
+* **Parameter BuildkiteAgentToken**: A Buildkite Agent Registration token for
+this deployment to use. This will be stored in a `String` type AWS SSM
+Parameter. See the
+[Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens)
+for details.
+* **Parameter BuildkiteQueue**: The name of the Buildkite queue this stack will
+service. You will use this queue name in your Buildkite Pipeline Agent Query
+rules e.g. `queue=my-queue-name`.
+* **Parameter EventBridgeBusName**: The name of an Amazon EventBridge Bus
+associated with a Buildkite Partner Event source **NB** ensure you provide the
+name of the EventBus name _not_ the EventBus ARN.
+* **Parameter VpcSubnetIds**: Optional, a comma separated list of VPC subnet IDs
+to schedule agents in. If left blank the default simple VPC, suitable for most
+use cases, will be created automatically.
+
+When creating the stack you will need to check the option to acknowledge that
+the stack creates custom IAM roles.
+
 ### Deploy using the AWS CloudFormation command line interface
 
 TBD
