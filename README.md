@@ -104,7 +104,11 @@ a configuration file inside the project. In the future you can just re-run
 
 The default On-Demand template combines several components to give you a simple
 off the shelf experience. If you want to customise how these components are
-combined, you can fork the [template repository](https://github.com/keithduncan/buildkite-on-demand-template). The default template includes:
+combined, you can fork the [template repository](https://github.com/keithduncan/buildkite-on-demand-template).
+
+![](images/template.png)
+
+The default template includes:
 
 - A simple VPC with two public subnets and an Internet Gateway.
 	- You can override this behaviour by providing a comma separated list of
