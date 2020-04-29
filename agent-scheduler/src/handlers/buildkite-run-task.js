@@ -111,6 +111,8 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
 
     let launchType = getAgentQueryRule("launch-type", job.agent_query_rules);
     if (launchType != undefined) {
+        console.log(`fn=getEcsRunTaskParamsForJob launchType=${launchType}`);
+
         if (launchType == "fargate") {
             // nop, fargate is default
         } else if (launchType == "ec2") {
