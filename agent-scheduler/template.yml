@@ -44,6 +44,13 @@ Parameters:
   EcsClusterName:
     Type: String
     Description: Name of the ECS Cluster to schedule task definitions in.
+  EcsLaunchType:
+    Type: String
+    Description: How to launch the task definition containers.
+    AllowedValues:
+      - FARGATE
+      - EC2
+    Default: FARGATE
   SshAgentBackend:
     Type: String
     Default: ''
@@ -129,6 +136,7 @@ Resources:
         Variables:
           ECS_CLUSTER_NAME: !Ref EcsClusterName
           VPC_SUBNETS: !Join [ ',', !Ref VpcSubnetIds ]
+          LAUNCH_TYPE: !Ref EcsLaunchType
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role/BuildkiteAgentTask"
           DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
           BUILDKITE_AGENT_TOKEN_PARAMETER_PATH: !Ref BuildkiteAgentTokenParameterPath
