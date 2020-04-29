@@ -109,6 +109,16 @@ function atLeastCpuMemory(requestedCpu, requestedMemory) {
 async function getEcsRunTaskParamsForJob(cluster, job) {
     let taskParams = getDefaultEcsRunTaskParams(cluster, job);
 
+    let launchType = getAgentQueryRule("launch-type", job.agent_query_rules);
+    if (launchType != undefined) {
+        if (launchType == "fargate") {
+            // nop, fargate is default
+        } else if (launchType == "ec2") {
+            taskParams.launchType = "EC2";
+            delete taskParams.networkConfiguration.awsvpcConfiguration.assignPublicIp;
+        }
+    }
+
     let taskDefinition = getAgentQueryRule("task-definition", job.agent_query_rules);
     if (taskDefinition != undefined) {
         // Task definition is overridden...
