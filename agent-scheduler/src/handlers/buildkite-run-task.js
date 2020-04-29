@@ -15,16 +15,35 @@ function getAgentQueryRule(rule, agentQueryRules) {
 function getDefaultEcsRunTaskParams(cluster, job) {
     let jobId = job.uuid || job.id;
     let subnets = process.env.VPC_SUBNETS.split(",");
+
+    let vpcConfiguration;
+    let launchType = process.env.LAUNCH_TYPE;
+    switch (launchType) {
+        case "FARGATE":
+            // Scheduled in a public or private subnet with a 0.0.0.0/0 gateway
+            // route.
+            vpcConfiguration = {
+                assignPublicIp: "ENABLED",
+                subnets: subnets,
+            };
+            break;
+        case "EC2":
+            // Scheduled in a private subnet with a 0.0.0.0/0 NAT gateway route.
+            vpcConfiguration = {
+                subnets: subnets,
+            };
+            break;
+        default:
+            throw `unsupported LAUNCH_TYPE environment variable: ${launchType}`;
+            break;
+    }
     
     let params = {
         cluster: cluster,
         count: 1,
-        launchType: "FARGATE",
+        launchType: launchType,
         networkConfiguration: {
-            awsvpcConfiguration: {
-                assignPublicIp: "ENABLED",
-                subnets: subnets
-            }
+            awsvpcConfiguration: vpcConfiguration,
         },
         overrides: {
             containerOverrides: [
@@ -108,18 +127,6 @@ function atLeastCpuMemory(requestedCpu, requestedMemory) {
 
 async function getEcsRunTaskParamsForJob(cluster, job) {
     let taskParams = getDefaultEcsRunTaskParams(cluster, job);
-
-    let launchType = getAgentQueryRule("launch-type", job.agent_query_rules);
-    if (launchType != undefined) {
-        console.log(`fn=getEcsRunTaskParamsForJob launchType=${launchType}`);
-
-        if (launchType == "fargate") {
-            // nop, fargate is default
-        } else if (launchType == "ec2") {
-            taskParams.launchType = "EC2";
-            delete taskParams.networkConfiguration.awsvpcConfiguration.assignPublicIp;
-        }
-    }
 
     let taskDefinition = getAgentQueryRule("task-definition", job.agent_query_rules);
     if (taskDefinition != undefined) {
