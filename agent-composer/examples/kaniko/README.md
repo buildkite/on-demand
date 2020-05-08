@@ -8,7 +8,7 @@ daemon.
 
 ## Template Parameters
 
-* **Image**: Main image, must include `socat`. See [keithduncan/buildkite-base](https://github.com/keithduncan/buildkite-base/blob/master/agent/Dockerfile) for an example.
+* **Image**: Main image, must include `socat`. See [buildkite/buildkite-base](https://github.com/buildkite/buildkite-base/blob/master/agent/Dockerfile) for an example.
 * **BuildkiteAgentImage**: Buildkite Agent sidecar image.
 * **BuildkiteAgentTokenParameterPath**: Optional, The AWS SSM Parameter Store parameter
 path to a Buildkite Agent registration token. Defaults to `/buildkite/agent-token`.
@@ -49,7 +49,7 @@ The `kaniko` task definition comprises these containers:
 - `agent-init`
 	- An image which includes the `buildkite-agent` and a `/buildkite` volume.
 - `ssh-agent`
-	- Optional, `keithduncan/iam-ssh-agent` image giving the main container
+	- Optional, `buildkite/iam-ssh-agent` image giving the main container
 	access to an `ssh-agent` for private key operations.
 	- Unix domain socket shared between this container and the `agent`
 	container for interprocess communication.

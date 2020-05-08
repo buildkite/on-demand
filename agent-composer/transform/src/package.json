@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "buildkite-on-demand cloudformation transform",
   "main": "app.js",
-  "repository": "https://github.com/keithduncan/buildkite-on-demand",
+  "repository": "https://github.com/buildkite/on-demand",
   "author": "Keith Duncan <keith_duncan@me.com>",
   "license": "MIT",
   "dependencies": {},
