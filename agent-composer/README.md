@@ -23,7 +23,7 @@ on-demand pipelines.
 to inject the Buildkite Agent into _any_ image, allowing the use of stock images
 from Docker Hub or elsewhere without modification.
 - [`iam-ssh-agent` Sidecar](#iam-ssh-agent-sidecar): add an
-[`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent) sidecar
+[`iam-ssh-agent`](https://github.com/buildkite/iam-ssh-agent) sidecar
 container to your task definition to enable secure, IAM controlled access to SSH
 keys. This allows source code repositories to be cloned without granting the
 agent container access to the raw key material.
@@ -67,7 +67,7 @@ container. This is possible in both ECS Tasks and Kubernetes Pods.
 A ready made agent sidecar image is available on Docker Hub
 [`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar),
 though it is also possible to build your own. The source for this image is
-available on [GitHub](https://github.com/keithduncan/buildkite-sidecar).
+available on [GitHub](https://github.com/buildkite/buildkite-sidecar).
 
 Adding the agent sidecar to your task definition can be handled by the
 [CloudFormation Macro](#buildkite-agent-cloudformation-macro).
@@ -82,7 +82,7 @@ behind a service interface that offers `list-keys` and `sign data` operations,
 similar to a network attached hardware security module.
 
 To deploy an `iam-ssh-agent` backend, see the
-[`iam-ssh-agent` project documentation](http://github.com/keithduncan/iam-ssh-agent).
+[`iam-ssh-agent` project documentation](http://github.com/buildkite/iam-ssh-agent).
 Once you have an `iam-ssh-agent` backend, you can add the client to your task
 definitions:
 
@@ -313,7 +313,7 @@ several task definitions.
 
 ## Default Task Definition
 
-`agent-scheduler` [defaults](https://github.com/keithduncan/buildkite-on-demand/blob/master/agent-scheduler/src/handlers/buildkite-run-task.js)
+`agent-scheduler` [defaults](https://github.com/buildkite/on-demand/blob/master/agent-scheduler/src/handlers/buildkite-run-task.js)
 to a task definition called `buildkite` if pipeline steps don’t specify a
 `task-definition` in the agent query rules. Add a default task definition to
 your CloudFormation template like this:
@@ -337,8 +337,8 @@ Resources:
       TaskMemory: 512
 ```
 
-This task definition uses a [base image](https://github.com/keithduncan/buildkite-base)
-and [agent sidecar image](https://github.com/keithduncan/buildkite-sidecar)
+This task definition uses a [base image](https://github.com/buildkite/buildkite-base)
+and [agent sidecar image](https://github.com/buildkite/buildkite-sidecar)
 from Docker Hub. You can of course use your own base image with your own set
 of pre-installed software. Avoid installing too much in your base image, prefer
 to use more specific task definitions with their own image to avoid collisions
@@ -478,15 +478,15 @@ stacks as you need to store images.
 All the examples so far have used public repositories with no authentication.
 Unlike the Buildkite Elastic CI Stack, there is no support for copying
 private keys to the on-demand agents. Instead, Buildkite on-demand uses role
-based access to an [`iam-ssh-agent`](https://github.com/keithduncan/iam-ssh-agent)
+based access to an [`iam-ssh-agent`](https://github.com/buildkite/iam-ssh-agent)
 backend which uses the caller's IAM identity to provide signatures for
 pre-approved ssh keys.
 
-See the the [`iam-ssh-agent` deployment documentation](https://github.com/keithduncan/iam-ssh-agent/tree/master/service#deploying)
+See the the [`iam-ssh-agent` deployment documentation](https://github.com/buildkite/iam-ssh-agent/tree/master/service#deploying)
 for details on how to deploy a copy of this serverless application to your AWS
-Organization. Once you have deployed the service, and [added your private keys](https://github.com/keithduncan/iam-ssh-agent/#adding-keys), you can create a task role in your
+Organization. Once you have deployed the service, and [added your private keys](https://github.com/buildkite/iam-ssh-agent/#adding-keys), you can create a task role in your
 on-demand account and
-[grant it access](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-keys)
+[grant it access](https://github.com/buildkite/iam-ssh-agent/#granting-access-to-keys)
 to an ssh key.
 
 To add the `iam-ssh-agent` sidecar to your task definition you add the
@@ -513,4 +513,4 @@ that has access. A task definition can be scheduled with different roles using
 the `task-role` agent query rule allowing a task definition be reused between
 projects including between open and closed source. If you choose to use a
 non-default role, ensure you include an IAM Policy to
-[grant access to the API Gateway](https://github.com/keithduncan/iam-ssh-agent/#granting-access-to-the-api-gateway).
+[grant access to the API Gateway](https://github.com/buildkite/iam-ssh-agent/#granting-access-to-the-api-gateway).

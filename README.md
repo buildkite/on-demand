@@ -104,7 +104,7 @@ a configuration file inside the project. In the future you can just re-run
 
 The default On-Demand template combines several components to give you a simple
 off the shelf experience. If you want to customise how these components are
-combined, you can fork the [template repository](https://github.com/keithduncan/buildkite-on-demand-template).
+combined, you can fork the [template repository](https://github.com/buildkite/on-demand-template).
 
 ![](images/template.png)
 
@@ -149,5 +149,5 @@ Macro that makes writing Buildkite Agent `AWS::ECS::TaskDefinitions` simple.
 ## template
 
 template is a git submodule for
-[keithduncan/buildkite-on-demand-template](https://github.com/keithduncan/buildkite-on-demand-template).
+[buildkite/on-demand-template](https://github.com/buildkite/on-demand-template).
 This is a template repository so forks are disconnected from this repository.
