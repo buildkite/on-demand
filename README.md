@@ -30,7 +30,7 @@ browser or the AWS CLI in your terminal.
 
 ### Deploy using the AWS CloudFormation web console
 
-[![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=buildkite-on-demand&templateURL=https://buildkite-on-demand-us-east-1.s3.amazonaws.com/on-demand/latest/template.yml)
+[![Launch AWS Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=buildkite-on-demand&templateURL=https://buildkite-serverless-apps-us-east-1.s3.amazonaws.com/on-demand/template/latest/template.yml)
 
 The CloudFormation console will ask you for values for the following parameters:
 
