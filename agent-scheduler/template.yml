@@ -60,46 +60,33 @@ Conditions:
   IncludeSshAgent: !Not [ !Equals [  !Ref SshAgentBackend, '' ] ]
 
 Resources:
-  BuildkiteScheduleTask:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: A Lambda function that processes Buildkite Job Scheduled notifications from an EventBridge Partner Event Source and enqueues them on an SQS queue.
-      Runtime: nodejs12.x
-      Handler: buildkite-schedule-task.handler
-      CodeUri: src/handlers/
-      Events:
-        EventBridge:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBridgeBusName
-            InputPath: $.detail
-            Pattern:
-              detail-type:
-                - "Job Scheduled"
-      MemorySize: 128
-      Timeout: 10
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt RunTaskQueue.QueueName
-      Environment:
-        Variables:
-          SQS_QUEUE_URL: !Ref RunTaskQueue
-          BUILDKITE_QUEUE: !Ref BuildkiteQueue
-  ScheduleTaskLogGroup:
-    Type: AWS::Logs::LogGroup
-    DependsOn: BuildkiteScheduleTask
-    Properties:
-      RetentionInDays: 1
-      LogGroupName:
-        !Sub
-        - '/aws/lambda/${LambdaName}'
-        - LambdaName: !Ref BuildkiteScheduleTask
-
   RunTaskQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 300
+
+  BuildkiteJobScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: Queue
+      Description: Enqueue Job Scheduled events on an SQS queue.
+      EventBusName: !Ref EventBridgeBusName
+      EventPattern:
+        account:
+          - !Ref 'AWS::AccountId'
+        detail-type:
+          - "Job Scheduled"
+        detail:
+          job:
+            agent_query_rules:
+              - !Sub "queue=${BuildkiteQueue}"
+      Targets:
+        - Id: Queue
+          Arn: !GetAtt RunTaskQueue.Arn
+          InputTransformer:
+            InputPathsMap:
+              job: $.detail.job
+            InputTemplate: "{"Job":"<job>"}"
   
   BuildkiteRunTask:
     Type: AWS::Serverless::Function
