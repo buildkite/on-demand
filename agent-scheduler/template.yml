@@ -86,7 +86,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               job: $.detail.job
-            InputTemplate: "{"Job":"<job>"}"
+            InputTemplate: "{\"Job\":\"<job>\"}"
   
   BuildkiteRunTask:
     Type: AWS::Serverless::Function
