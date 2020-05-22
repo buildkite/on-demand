@@ -216,7 +216,7 @@ Resources:
   BuildkiteEventsLog:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/events/Buildkite
+      LogGroupName: !Sub /aws/events/buildkite/${AWS::StackName}
       RetentionInDays: 1
 
   BuildkiteEventsLogRule:
