@@ -199,7 +199,7 @@ Resources:
                 Action:
                   - 'ssm:GetParameter'
                   - 'ssm:GetParameters'
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/buildkite/agent-token
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BuildkiteAgentTokenParameterPath}
               - Effect: Allow
                 Action: kms:Decrypt
                 Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
