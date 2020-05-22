@@ -386,8 +386,8 @@ exports.handler = async (event) => {
     let cluster = process.env.ECS_CLUSTER_NAME;
     
     let tasks = event.Records.map(record => {
-        let { Job } = JSON.parse(record.body);
-        return runTaskForBuildkiteJob(cluster, Job);
+        let { job } = JSON.parse(record.body);
+        return runTaskForBuildkiteJob(cluster, job);
     });
     
     await Promise.all(tasks);
