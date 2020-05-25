@@ -93,6 +93,27 @@ Resources:
           Arn: !GetAtt RunTaskQueue.Arn
           InputPath: $.detail
   
+  RunTaskQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref RunTaskQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id:
+          !Sub
+            - "${Queue}/SQSDefaultPolicy"
+            - Queue: !GetAtt RunTaskQueue.Arn
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "events.amazonaws.com"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt RunTaskQueue.Arn
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !GetAtt BuildkiteJobScheduledRule.Arn
+
   BuildkiteRunTask:
     Type: AWS::Serverless::Function
     Properties:
