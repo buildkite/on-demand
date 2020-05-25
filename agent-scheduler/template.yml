@@ -33,7 +33,7 @@ Parameters:
   BuildkiteQueue:
     Type: String
     Description: Queue name that agents will be scheduled for on-demand, targeted in pipeline steps using an agent query rule "queue={value}".
-    AllowedPattern: ^[a-zA-Z0-9\-_]{1,255}
+    AllowedPattern: ^[a-zA-Z0-9\-_]{1,50}
   BuildkiteAgentTokenParameterPath:
     Type: AWS::SSM::Parameter::Name
     Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
@@ -76,7 +76,11 @@ Resources:
   BuildkiteJobScheduledRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: Queue
+      # Using BuildkiteQueue enforces that only one scheduler per queue is
+      # attached to the EventBridge Bus.
+      #
+      # BuildkiteQueue can be 50, AWS::Events::Rule Name is limited to 64
+      Name: !Sub "${BuildkiteQueue}-Queue"
       Description: Enqueue Job Scheduled events on an SQS queue.
       EventBusName: !Ref EventBridgeBusName
       EventPattern:
@@ -93,6 +97,27 @@ Resources:
           Arn: !GetAtt RunTaskQueue.Arn
           InputPath: $.detail
   
+  RunTaskQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref RunTaskQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id:
+          !Sub
+            - "${Queue}/SQSDefaultPolicy"
+            - Queue: !GetAtt RunTaskQueue.Arn
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "events.amazonaws.com"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt RunTaskQueue.Arn
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !GetAtt BuildkiteJobScheduledRule.Arn
+
   BuildkiteRunTask:
     Type: AWS::Serverless::Function
     Properties:
@@ -214,7 +239,11 @@ Resources:
   BuildkiteEventsLogRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: Log
+      # Using BuildkiteQueue enforces that only one scheduler per queue is
+      # attached to the EventBridge Bus.
+      #
+      # BuildkiteQueue can be 50, AWS::Events::Rule Name is limited to 64
+      Name: !Sub "${BuildkiteQueue}-Log"
       Description: Log all Buildkite events to a CloudWatch Log Group
       EventBusName: !Ref EventBridgeBusName
       EventPattern:
