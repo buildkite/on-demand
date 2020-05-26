@@ -201,7 +201,7 @@ async function getEcsRunTaskParamsForJob(cluster, job) {
                 containerDefinitions: [
                     {
                         name: "agent-init",
-                        image: "keithduncan/buildkite-sidecar",
+                        image: "buildkite/agent:3-sidecar",
                         essential: false,
                         entryPoint: [
                             '/bin/sh',

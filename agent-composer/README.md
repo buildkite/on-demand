@@ -64,10 +64,9 @@ With that image in hand, it is possible to schedule a container which simply
 (or platform equivalent) to bring the `buildkite` volume in to another
 container. This is possible in both ECS Tasks and Kubernetes Pods.
 
-A ready made agent sidecar image is available on Docker Hub
-[`keithduncan/buildkite-sidecar`](https://hub.docker.com/r/keithduncan/buildkite-sidecar),
-though it is also possible to build your own. The source for this image is
-available on [GitHub](https://github.com/buildkite/buildkite-sidecar).
+A ready made agent sidecar image is available on Docker Hub in the
+[`buildkite/agent`](https://hub.docker.com/r/buildkite/agent) repository. The 
+sidecar variant is tagged as $version-sidecar e.g. buildkite/agent:3-sidecar.
 
 Adding the agent sidecar to your task definition can be handled by the
 [CloudFormation Macro](#buildkite-agent-cloudformation-macro).
@@ -174,7 +173,7 @@ Ruby2:
   Type: Buildkite::ECS::TaskDefinition
   Properties:
     Image: ruby:2.7
-    BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+    BuildkiteAgentImage: buildkite/agent:3-sidecar
     TaskFamily: ruby2
     TaskCpu: 1024
     TaskMemory: 2048
@@ -184,7 +183,7 @@ This creates a task definition called `ruby2`, which you would address in your
 on-demand pipeline with a `task-definition: ruby2` Agent Query Rule.
 
 The main image is `ruby:2.7` from Docker Hub, the Buildkite sidecar is
-`keithduncan/buildkite-sidecar:latest`.
+`buildkite/agent:3-sidecar`.
 
 This image doesn't have an `iam-ssh-agent` sidecar and so cannot clone private
 repositories.
@@ -330,15 +329,15 @@ Resources:
   Buildkite:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
-      Image: keithduncan/buildkite-base
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      Image: buildkite/on-demand-base
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       TaskFamily: buildkite
       TaskCpu: 256
       TaskMemory: 512
 ```
 
-This task definition uses a [base image](https://github.com/buildkite/buildkite-base)
-and [agent sidecar image](https://github.com/buildkite/buildkite-sidecar)
+This task definition uses a [base image](https://github.com/buildkite/on-demand-base)
+and [agent sidecar image](https://github.com/buildkite/agent/tree/master/packaging/docker/sidecar)
 from Docker Hub. You can of course use your own base image with your own set
 of pre-installed software. Avoid installing too much in your base image, prefer
 to use more specific task definitions with their own image to avoid collisions
@@ -374,7 +373,7 @@ Resources:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
       Image: ruby:2.7.0
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       TaskFamily: ruby2
       TaskCpu: 1024
       TaskMemory: 2048
@@ -417,15 +416,15 @@ Resources:
     Properties:
       TemplateURL: examples/kaniko/kaniko.yml
       Parameters:
-        Image: keithduncan/buildkite-base
-        BuildkiteAgentImage: keithduncan/buildkite-sidecar
+        Image: buildkite/on-demand-base
+        BuildkiteAgentImage: buildkite/agent:3-sidecar
         DockerConfigAwsRegistriesEcrHelper:
           !Join
             - ","
             - [ !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" ]
 ```
 
-`keithduncan/buildkite-base` includes `socat` which is needed to communicate
+`buildkite/on-demand-base` includes `socat` which is needed to communicate
 with the kaniko sidecar container.
 
 This instantiation of the kaniko stack configures kaniko to use `ecr-login` when
@@ -499,7 +498,7 @@ Adding the `iam-ssh-agent` sidecar to the Ruby task definition would like this:
      Type: Buildkite::ECS::TaskDefinition
      Properties:
        Image: ruby:2.7.0
-       BuildkiteAgentImage: keithduncan/buildkite-sidecar
+       BuildkiteAgentImage: buildkite/agent:3-sidecar
 +      SshAgentBackend: arn:aws:execute-api:us-east-1:12345EXAMPLE:zEXAMPLE12/Prod
        TaskFamily: ruby2
        TaskCpu: 1024
