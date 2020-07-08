@@ -102,18 +102,19 @@ a configuration file inside the project. In the future you can just re-run
 
 ## Using ECS EC2 instead of ECS Fargate
 
-The default on-demand template uses ECS Fargate for a simple starter experience.
-An [ECS EC2 template variant](https://github.com/buildkite/on-demand-template/tree/ec2)
-is also available. You can [launch this stack directly](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template?stackName=buildkite-on-demand&templateURL=https://buildkite-serverless-apps-us-east-1.s3.amazonaws.com/on-demand/template/ec2/template.yml), though you will very likely want to fork and change the
-CloudFormation template to suit your requirements.
+The default on-demand template uses ECS Fargate for a simple experience, with
+fewer resources to operate and secure. A variant of the template that uses
+[ECS EC2](https://github.com/buildkite/on-demand-template/tree/ec2)
+is also available. You can [launch this stack directly](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template?stackName=buildkite-on-demand&templateURL=https://buildkite-serverless-apps-us-east-1.s3.amazonaws.com/on-demand/template/ec2/template.yml), though you will very likely need to fork it to suit your
+requirements.
 
 You might want to use ECS EC2 for:
 
 - control over the ECS cluster autoscaling to match your workload, scale up or
 down on a fixed schedule, or pay for a minimum number of instances to be present
 all the time
-- access to larger container instances than Fargate offers
-- control over Docker image caching yielding lower latency agent start times
+- access to larger and differentiated instances that Fargate doesn't offer
+- control over Docker image caching for lower latency agent start times
 - access to the host's Docker socket
 - the latest EC2 features not yet available on Fargate
 
