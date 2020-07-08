@@ -6,7 +6,7 @@ Buildkite On-Demand is an event driven Buildkite Agent scheduler. Built on the
 Buildkite AWS EventBridge integration, containerised Buildkite Agents are
 scheduled using Amazon Elastic Container Service to run on AWS Fargate or EC2.
 An agent is created for each build and exits immediately on completion. There
-are no polling agents so you only pay for the compute time you use.
+are no polling agents, you only pay for the compute platform you use.
 
 This repository contains resources and documentation to help you configure an
 AWS account to schedule and run agents for your Buildkite Organization in
@@ -100,6 +100,23 @@ and use the CloudFormation Macro to transform the agent substack.
 a configuration file inside the project. In the future you can just re-run
 `sam deploy` without parameters to deploy changes.
 
+## Using ECS EC2 instead of ECS Fargate
+
+The default template uses ECS Fargate for a simple starter experience. An
+[ECS EC2 template variant](https://github.com/buildkite/on-demand-template/tree/ec2)
+is also available, though you will very likely want to fork and change it to
+suit your requirements.
+
+You might want to use ECS EC2 for:
+
+- control over the ECS cluster autoscaling to match your workload, scale up or
+down on a fixed schedule, or pay for a minimum number of instances to be present
+all the time
+- access to larger container instances than Fargate offers
+- control over Docker image caching yielding lower latency agent start times
+- access to the host's Docker socket
+- the latest EC2 features not yet available on Fargate
+
 # Modular Design
 
 The default On-Demand template combines several components to give you a simple
@@ -124,8 +141,8 @@ The default template includes:
 	- Using a substack to define your agent task definitions and task roles
 	ensures your infrastructure is continuously deployable. The CloudFormation
 	Macro makes writing these task definitions easy. This component is
-	entirely optional, you could create your task definitions using the
-	technology stack you are most comfortable with.
+	entirely optional, you can also create your task definitions manually or
+	using the technology stack you are most comfortable with.
 
 # Subprojects
 
