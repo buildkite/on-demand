@@ -43,8 +43,8 @@ Resources:
   Buildkite:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
-      Image: keithduncan/buildkite-base:latest
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      Image: buildkite/on-demand-base:latest
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: buildkite
 
@@ -67,7 +67,7 @@ Resources:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
       Image: ruby:2.7.0
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: ruby2
 
@@ -82,7 +82,7 @@ Resources:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
       Image: hashicorp/terraform:light
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: terraform
 
@@ -100,8 +100,8 @@ Resources:
     Properties:
       TemplateURL: kaniko/kaniko.yml
       Parameters:
-        Image: keithduncan/buildkite-base:latest
-        BuildkiteAgentImage: keithduncan/buildkite-sidecar:latest
+        Image: buildkite/on-demand-base:latest
+        BuildkiteAgentImage: buildkite/agent:3-sidecar
         SshAgentBackend:
           !If
             - HasSshAgentBackend
@@ -139,7 +139,7 @@ Resources:
     Type: Buildkite::ECS::TaskDefinition
     Properties:
       Image: !GetAtt BuildSam.Outputs.Image
-      BuildkiteAgentImage: keithduncan/buildkite-sidecar
+      BuildkiteAgentImage: buildkite/agent:3-sidecar
       SshAgentBackend: !Ref SshAgentBackend
       TaskFamily: sam
       Environment:
