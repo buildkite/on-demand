@@ -196,7 +196,7 @@ There are no secrets or environment variables included.
 
 ```yaml
 CargoPublish:
-  Type: Buildkite::ECS::Agent
+  Type: Buildkite::ECS::TaskDefinition
   Properties:
     Image: !GetAtt BuildRust.Outputs.Image
     BuildkiteAgentImage: !GetAtt BuildAgentSidecar.Outputs.Image
