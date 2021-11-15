@@ -157,7 +157,7 @@ function getBearerToken(clusterId) {
     let region = AWS.config.region;
     let credentials = AWS.config.credentials;
 
-    let params2 = {
+    let params = {
         host: `sts.${region}.amazonaws.com`,
         path: "/?Action=GetCallerIdentity&Version=2011-06-15&X-Amz-Expires=60",
         headers: {
