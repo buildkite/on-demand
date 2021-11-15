@@ -217,10 +217,12 @@ exports.handler = async (event) => {
     let clusterIdentifier = process.env.KUBERNETES_CLUSTER_IDENTIFIER;
     let apiServer = process.env.KUBERNETES_API_SERVER_ENDPOINT;
     let namespace = process.env.KUBERNETES_NAMESPACE;
+    let caData = process.env.KUBERNETES_CERTIFICATE_AUTHORITY_DATA;
 
     const cluster = {
         name: 'my-server',
         server: apiServer,
+        caData: caData,
     };
 
     const user = {

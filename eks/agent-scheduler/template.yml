@@ -24,6 +24,7 @@ Metadata:
           default: Kubernetes
         Parameters:
           - KubernetesApiServerEndpoint
+          - KubernetesCertificateAuthorityData
           - KubernetesNamespace
 
 Parameters:
@@ -49,6 +50,9 @@ Parameters:
   KubernetesApiServerEndpoint:
     Type: String
     Description: HTTP endpoint of the kubernetes Cluster to schedule jobs on.
+  KubernetesCertificateAuthorityData:
+    Type: String
+    Description: The Certificate Authority Data for the kubernetes cluster API server.
 
 Resources:
   RunTaskQueue:
@@ -124,6 +128,7 @@ Resources:
         Variables:
           KUBERNETES_CLUSTER_IDENTIFIER: !Ref KubernetesClusterIdentifier
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
+          KUBERNETES_CERTIFICATE_AUTHORITY_DATA: !Ref KubernetesCertificateAuthorityData
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
           BUILDKITE_AGENT_TOKEN: !Ref BuildkiteAgentTokenParameterPath
   RunTaskLogGroup:
