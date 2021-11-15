@@ -39,6 +39,9 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
     Default: /buildkite/agent-token
+  KubernetesClusterIdentifier:
+    Type: String
+    Description: The name of the AWS EKS cluster, used for AWS-IAM-Authentication.
   KubernetesNamespace:
     Type: String
     Default: buildkite
@@ -119,6 +122,7 @@ Resources:
             QueueName: !GetAtt RunTaskQueue.QueueName
       Environment:
         Variables:
+          KUBERNETES_CLUSTER_IDENTIFIER: !Ref KubernetesClusterIdentifier
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
           BUILDKITE_AGENT_TOKEN: !Ref BuildkiteAgentTokenParameterPath

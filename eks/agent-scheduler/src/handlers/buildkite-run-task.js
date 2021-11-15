@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+const aws4 = require('aws4');
 const k8s = require('@kubernetes/client-node');
 
 function getAgentQueryRule(rule, agentQueryRules) {
@@ -151,9 +152,35 @@ async function runTaskForBuildkiteJob(k8sApi, namespace, job) {
     throw new Error("Couldn't schedule kubernetes job after 5 attempts");
 }
 
+// https://github.com/kubernetes-sigs/aws-iam-authenticator#api-authorization-from-outside-a-cluster
+function getBearerToken(clusterId) {
+    let region = AWS.config.region;
+    let credentials = AWS.config.credentials;
+
+    let params2 = {
+        host: `sts.${region}.amazonaws.com`,
+        path: "/?Action=GetCallerIdentity&Version=2011-06-15&X-Amz-Expires=60",
+        headers: {
+            'x-k8s-aws-id': clusterId,
+        },
+        signQuery: true,
+    }
+    let signature = aws4.sign(params);
+
+    let signedUrl = `https://${signature.host}${signature.path}`
+
+    var base64 = Buffer.from(signedUrl, 'binary').toString('base64').replace(/=+$/g, '')
+    base64 = base64.replace(/+/g, '-')
+    base64 = base64.replace(/\//g, '_')
+    base64 = base64.replace(/=/g, '.')
+
+    return `k8s-aws-v1.${base64}`
+}
+
 exports.handler = async (event) => {
     console.log(`fn=handler event=${JSON.stringify(event)}`);
 
+    let clusterIdentifier = process.env.KUBERNETES_CLUSTER_IDENTIFIER;
     let apiServer = process.env.KUBERNETES_API_SERVER_ENDPOINT;
     let namespace = process.env.KUBERNETES_NAMESPACE;
 
@@ -164,7 +191,7 @@ exports.handler = async (event) => {
 
     const user = {
         name: 'my-user',
-        password: 'some-password',
+        password: getBearerToken(clusterIdentifier),
     };
 
     const context = {
