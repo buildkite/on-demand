@@ -175,7 +175,7 @@ async function runTaskForBuildkiteJob(k8sApi, namespace, job) {
             return result;
         }
         catch (e) {
-            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${e}`);
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${JSON.stringify(e)}`);
             
             await sleep(1000 * Math.pow(attempt, 2));
             
