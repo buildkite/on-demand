@@ -19,11 +19,12 @@ Metadata:
           default: AWS
         Parameters:
           - EventBridgeBusName
-          - VpcSubnetIds
-          - EcsClusterName
-    ParameterLabels:
-      VpcSubnetIds:
-        default: "Which VPC subnets should agent containers be scheduled in?"
+      -
+        Label:
+          default: Kubernetes
+        Parameters:
+          - KubernetesApiServerEndpoint
+          - KubernetesNamespace
 
 Parameters:
   EventBridgeBusName:
@@ -38,19 +39,13 @@ Parameters:
     Type: AWS::SSM::Parameter::Name
     Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
     Default: /buildkite/agent-token
-  VpcSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: List of VPC subnets to launch agent containers in.
-  EcsClusterName:
+  KubernetesNamespace:
     Type: String
-    Description: Name of the ECS Cluster to schedule task definitions in.
-  EcsLaunchType:
+    Default: buildkite
+    Description: The kubernetes namespace to schedule jobs in.
+  KubernetesApiServerEndpoint:
     Type: String
-    Description: How to launch the task definition containers.
-    AllowedValues:
-      - FARGATE
-      - EC2
-    Default: FARGATE
+    Description: HTTP endpoint of the EKS Cluster to schedule jobs on.
   SshAgentBackend:
     Type: String
     Default: ''
@@ -121,7 +116,7 @@ Resources:
   BuildkiteRunTask:
     Type: AWS::Serverless::Function
     Properties:
-      Description: A Lambda function that dequeues Buildkite Job Scheduled notifications from an SQS queue and runs an ECS task for them.
+      Description: A Lambda function that dequeues Buildkite Job Scheduled notifications from an SQS queue and schedules a Kubernetes job for them.
       Runtime: nodejs12.x
       Handler: buildkite-run-task.handler
       CodeUri: src/handlers/
