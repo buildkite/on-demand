@@ -45,22 +45,7 @@ Parameters:
     Description: The kubernetes namespace to schedule jobs in.
   KubernetesApiServerEndpoint:
     Type: String
-    Description: HTTP endpoint of the EKS Cluster to schedule jobs on.
-  SshAgentBackend:
-    Type: String
-    Default: ''
-    Description: (Optional) API Gateway Stage ARN for an iam-ssh-agent backend.
-  ExecutionRolePrefix:
-    Type: String
-    Default: '/BuildkiteAgentExecution/'
-    AllowedPattern: (\u002F[\u0021-\u007F]+\u002F)
-  TaskRolePrefix:
-    Type: String
-    Default: '/BuildkiteAgentTask/'
-    AllowedPattern: (\u002F[\u0021-\u007F]+\u002F)
-
-Conditions:
-  IncludeSshAgent: !Not [ !Equals [  !Ref SshAgentBackend, '' ] ]
+    Description: HTTP endpoint of the kubernetes Cluster to schedule jobs on.
 
 Resources:
   RunTaskQueue:
@@ -132,49 +117,11 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - SQSPollerPolicy:
             QueueName: !GetAtt RunTaskQueue.QueueName
-        - Version: "2012-10-17"
-          Statement:
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role${ExecutionRolePrefix}*
-              - !Sub arn:aws:iam::${AWS::AccountId}:role${TaskRolePrefix}*
       Environment:
         Variables:
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
-          TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role${TaskRolePrefix}"
-          DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
           BUILDKITE_AGENT_TOKEN_PARAMETER_PATH: !Ref BuildkiteAgentTokenParameterPath
-          IAM_SSH_AGENT_BACKEND_URL:
-            !If
-              - IncludeSshAgent
-              - {
-                  "Fn::Sub": [
-                    "https://${ApiId}.execute-api.${Region}.amazonaws.com/${Stage}",
-                    {
-                      ApiId: {
-                        "Fn::Select": [
-                          5,
-                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
-                        ]
-                      },
-                      Region: {
-                        "Fn::Select": [
-                          3,
-                          { "Fn::Split": [ ":", { "Fn::Select": [ 0, { "Fn::Split": [ "/", !Ref SshAgentBackend ] } ] } ] }
-                        ]
-                      },
-                      Stage: {
-                        "Fn::Select": [
-                          1,
-                          { "Fn::Split": [ "/", !Ref SshAgentBackend ] }
-                        ]
-                      },
-                    },
-                  ]
-                }
-              - !Ref AWS::NoValue
   RunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: BuildkiteRunTask
@@ -184,40 +131,6 @@ Resources:
         !Sub
         - '/aws/lambda/${LambdaName}'
         - LambdaName: !Ref BuildkiteRunTask
-
-  DefaultExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: [ecs-tasks.amazonaws.com]
-            Action: ['sts:AssumeRole']
-      Path: !Ref ExecutionRolePrefix
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-      Policies:
-        - PolicyName: FetchDecryptSecrets
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ssm:GetParameter'
-                  - 'ssm:GetParameters'
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BuildkiteAgentTokenParameterPath}
-              - Effect: Allow
-                Action: kms:Decrypt
-                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/aws/ssm
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                  - logs:DescribeLogStreams
-                Resource:
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/ecs/ondemand-*
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/ecs/ondemand-*:log-stream:*
 
   BuildkiteEventsLog:
     Type: AWS::Logs::LogGroup
