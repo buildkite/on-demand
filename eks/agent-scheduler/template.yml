@@ -36,7 +36,7 @@ Parameters:
     Description: Queue name that agents will be scheduled for on-demand, targeted in pipeline steps using an agent query rule "queue={value}".
     AllowedPattern: ^[a-zA-Z0-9\-_]{1,50}
   BuildkiteAgentTokenParameterPath:
-    Type: AWS::SSM::Parameter::Name
+    Type: AWS::SSM::Parameter::Value<String>
     Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
     Default: /buildkite/agent-token
   KubernetesNamespace:
@@ -121,7 +121,7 @@ Resources:
         Variables:
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
-          BUILDKITE_AGENT_TOKEN_PARAMETER_PATH: !Ref BuildkiteAgentTokenParameterPath
+          BUILDKITE_AGENT_TOKEN: !Ref BuildkiteAgentTokenParameterPath
   RunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: BuildkiteRunTask

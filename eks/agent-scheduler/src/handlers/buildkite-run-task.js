@@ -79,7 +79,7 @@ async function scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, buildkite
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
     const agentVar = new k8s.V1EnvVar();
     agentVar.name = "BUILDKITE_AGENT_TOKEN"
-    agentVar.value = "";
+    agentVar.value = process.env.BUILDKITE_AGENT_TOKEN;
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const buildkiteAgentContainer = new k8s.V1Container();
