@@ -1,3 +1,3 @@
-[submodule "template"]
-	path = template
+[submodule "ecs/template"]
+	path = ecs/template
 	url = https://github.com/buildkite/on-demand-template
