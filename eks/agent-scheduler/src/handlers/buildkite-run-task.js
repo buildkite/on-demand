@@ -204,7 +204,7 @@ function getBearerToken(clusterId) {
     let signedUrl = `https://${signature.host}${signature.path}`
 
     var base64 = Buffer.from(signedUrl, 'binary').toString('base64').replace(/=+$/g, '')
-    base64 = base64.replace(/+/g, '-')
+    base64 = base64.replace(/\+/g, '-')
     base64 = base64.replace(/\//g, '_')
     base64 = base64.replace(/=/g, '.')
 
