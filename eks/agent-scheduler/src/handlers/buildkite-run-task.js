@@ -75,16 +75,17 @@ async function sleep(ms){
     });
 }
 
+async function scheduleKubernetesJobForBuildkiteJob(k8sApi, job) {
+
+}
+
 async function runTaskForBuildkiteJob(k8sApi, job) {
     console.log(`fn=runTaskForBuildkiteJob attempt=${attempt}`);
     
     for (var attempt = 1; attempt < 6; attempt++) {
         try {
-            let ecs = new AWS.ECS({apiVersion: '2014-11-13'});
-            let taskParams = await getEcsRunTaskParamsForJob(job);
-
             console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask params=${JSON.stringify(taskParams)}`);
-            let result = await ecs.runTask(taskParams).promise();
+            let result = await scheduleKubernetesJobForBuildkiteJob(k8sApi, job);
             console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask result=${JSON.stringify(result)}`);
 
             return result;
@@ -98,7 +99,7 @@ async function runTaskForBuildkiteJob(k8sApi, job) {
         }
     }
     
-    throw new Error("Couldn't start ECS task after 5 attempts");
+    throw new Error("Couldn't schedule kubernetes job after 5 attempts");
 }
 
 exports.handler = async (event) => {
