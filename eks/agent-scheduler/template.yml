@@ -37,7 +37,7 @@ Parameters:
     AllowedPattern: ^[a-zA-Z0-9\-_]{1,50}
   BuildkiteAgentTokenParameterPath:
     Type: AWS::SSM::Parameter::Value<String>
-    Description: Buildkite Agent registration token parameter path, can be a String or SecureString.
+    Description: Buildkite Agent registration token parameter path, must be a String parameter.
     Default: /buildkite/agent-token
   KubernetesClusterIdentifier:
     Type: String
