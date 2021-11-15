@@ -1,7 +1,7 @@
 # agent-scheduler
 
 This project contains source code and supporting files for scheduling Buildkite
-Agents using AWS Elastic Container Service in response to builds.
+Agents using AWS Elastic Container Service in response to jobs.
 
 - `src` - Code for the Lambda functions.
 - `template.yml` - A CloudFormation template that defines the AWS resources.
