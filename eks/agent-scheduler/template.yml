@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Buildkite On-Demand ECS Agent Scheduler
+  Buildkite On-Demand EKS Agent Scheduler
 
 Transform:
 - AWS::Serverless-2016-10-31
