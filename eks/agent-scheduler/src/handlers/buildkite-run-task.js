@@ -168,7 +168,7 @@ async function runTaskForBuildkiteJob(k8sApi, namespace, job) {
     
     for (var attempt = 1; attempt < 6; attempt++) {
         try {
-            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask params=${JSON.stringify(taskParams)}`);
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask`);
             let result = await scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, job);
             console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=runTask result=${JSON.stringify(result)}`);
 
