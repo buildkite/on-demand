@@ -102,6 +102,10 @@ async function sleep(ms){
 */
 async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+
+    // TODO: ideally this would not be stored in plaintext in the env, but
+    // supporting arbitrary containers and AssumeRole from k8s roles to get
+    // ssm:GetParameter support might not be possible
     const agentVar = new k8s.V1EnvVar();
     agentVar.name = "BUILDKITE_AGENT_TOKEN"
     agentVar.value = process.env.BUILDKITE_AGENT_TOKEN;
