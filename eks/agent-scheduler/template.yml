@@ -146,9 +146,8 @@ Resources:
           Version: "2012-10-17"
       Environment:
         Variables:
-          ECS_CLUSTER_NAME: !Ref EcsClusterName
-          VPC_SUBNETS: !Join [ ',', !Ref VpcSubnetIds ]
-          LAUNCH_TYPE: !Ref EcsLaunchType
+          KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
+          KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
           TASK_ROLE_ARN_PREFIX: !Sub "arn:aws:iam::${AWS::AccountId}:role${TaskRolePrefix}"
           DEFAULT_EXECUTION_ROLE_ARN: !GetAtt DefaultExecutionRole.Arn
           BUILDKITE_AGENT_TOKEN_PARAMETER_PATH: !Ref BuildkiteAgentTokenParameterPath

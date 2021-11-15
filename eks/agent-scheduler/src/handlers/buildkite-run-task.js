@@ -354,7 +354,7 @@ async function sleep(ms){
     });
 }
 
-async function runTaskForBuildkiteJob(cluster, job) {
+async function runTaskForBuildkiteJob(apiServer, job) {
     console.log(`fn=runTaskForBuildkiteJob attempt=${attempt}`);
     
     for (var attempt = 1; attempt < 6; attempt++) {
@@ -383,11 +383,11 @@ async function runTaskForBuildkiteJob(cluster, job) {
 exports.handler = async (event) => {
     console.log(`fn=handler event=${JSON.stringify(event)}`);
 
-    let cluster = process.env.ECS_CLUSTER_NAME;
+    let apiServer = process.env.KUBERNETES_API_SERVER_ENDPOINT;
     
     let tasks = event.Records.map(record => {
         let { job } = JSON.parse(record.body);
-        return runTaskForBuildkiteJob(cluster, job);
+        return runTaskForBuildkiteJob(apiServer, job);
     });
     
     await Promise.all(tasks);
