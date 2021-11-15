@@ -132,18 +132,13 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - SQSPollerPolicy:
             QueueName: !GetAtt RunTaskQueue.QueueName
-        - Statement:
-          - Effect: Allow
-            Action:
-              - ecs:RunTask
-              - ecs:RegisterTaskDefinition
-            Resource: "*"
+        - Version: "2012-10-17"
+          Statement:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:role${ExecutionRolePrefix}*
               - !Sub arn:aws:iam::${AWS::AccountId}:role${TaskRolePrefix}*
-          Version: "2012-10-17"
       Environment:
         Variables:
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
