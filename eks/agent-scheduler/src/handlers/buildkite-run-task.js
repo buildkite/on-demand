@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+const k8s = require('@kubernetes/client-node');
 
 function getAgentQueryRule(rule, agentQueryRules) {
     let taskDefinition = agentQueryRules.filter(query_rule => {
@@ -354,7 +355,7 @@ async function sleep(ms){
     });
 }
 
-async function runTaskForBuildkiteJob(apiServer, job) {
+async function runTaskForBuildkiteJob(k8sApi, job) {
     console.log(`fn=runTaskForBuildkiteJob attempt=${attempt}`);
     
     for (var attempt = 1; attempt < 6; attempt++) {
@@ -384,10 +385,35 @@ exports.handler = async (event) => {
     console.log(`fn=handler event=${JSON.stringify(event)}`);
 
     let apiServer = process.env.KUBERNETES_API_SERVER_ENDPOINT;
+
+    const cluster = {
+        name: 'my-server',
+        server: apiServer,
+    };
+
+    const user = {
+        name: 'my-user',
+        password: 'some-password',
+    };
+
+    const context = {
+        name: 'my-context',
+        user: user.name,
+        cluster: cluster.name,
+    };
+
+    const kc = new k8s.KubeConfig();
+    kc.loadFromOptions({
+        clusters: [cluster],
+        users: [user],
+        contexts: [context],
+        currentContext: context.name,
+    });
+    const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
     
     let tasks = event.Records.map(record => {
         let { job } = JSON.parse(record.body);
-        return runTaskForBuildkiteJob(apiServer, job);
+        return runTaskForBuildkiteJob(k8sApi, job);
     });
     
     await Promise.all(tasks);
