@@ -203,6 +203,13 @@ function getBearerToken(clusterId) {
 
     let signedUrl = `https://${signature.host}${signature.path}`
 
+    /*
+        This encoding matches aws-iam-authenticator
+
+        https://github.com/kubernetes-sigs/aws-iam-authenticator/blob/02a86a549cee91b37baff12d2528f185594fb98c/pkg/token/token.go#L335
+        https://pkg.go.dev/encoding/base64#pkg-variables
+        https://www.rfc-editor.org/rfc/rfc4648.html#section-5
+    */
     var base64 = Buffer.from(signedUrl, 'binary').toString('base64').replace(/=+$/g, '')
     base64 = base64.replace(/\+/g, '-')
     base64 = base64.replace(/\//g, '_')
