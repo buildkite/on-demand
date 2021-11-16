@@ -206,7 +206,6 @@ function getBearerToken(clusterId) {
     var base64 = Buffer.from(signedUrl, 'binary').toString('base64').replace(/=+$/g, '')
     base64 = base64.replace(/\+/g, '-')
     base64 = base64.replace(/\//g, '_')
-    base64 = base64.replace(/=/g, '.')
 
     return `k8s-aws-v1.${base64}`
 }
