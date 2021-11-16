@@ -227,7 +227,7 @@ exports.handler = async (event) => {
 
     const user = {
         name: 'my-user',
-        password: getBearerToken(clusterIdentifier),
+        token: getBearerToken(clusterIdentifier),
     };
 
     const context = {
