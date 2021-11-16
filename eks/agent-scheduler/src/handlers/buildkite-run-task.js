@@ -122,7 +122,7 @@ async function kubernetesJobForBuildkiteJob(buildkiteJob) {
         agentTokenVar,
         jobIdVar,
     ]
-    buildkiteAgentContainer.command = [
+    buildkiteAgentContainer.args = [
         "start",
         "--disconnect-after-job",
         "--disconnect-after-idle-timeout=10"
