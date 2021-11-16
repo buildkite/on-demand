@@ -1,7 +1,7 @@
 # agent-scheduler
 
-This project contains source code and supporting files for scheduling Buildkite
-Agents using AWS Elastic Kubernetes Service in response to jobs.
+This project contains source code and supporting files for scheduling one-shot
+Buildkite Agents using AWS Elastic Kubernetes Service in response to jobs.
 
 - `src` - Code for the Lambda functions.
 - `template.yml` - A CloudFormation template that defines the AWS resources.
@@ -10,56 +10,39 @@ Agents using AWS Elastic Kubernetes Service in response to jobs.
 
 This stack has the following prerequisites that must be deployed beforehand:
 
-* **Buildkite Agent Registration Token SSM Parameter**: A `String` or
-`SecretString` parameter that stores an agent registration token.
+* **Buildkite Agent Registration Token SSM Parameter**: A `String` parameter
+that stores an agent registration token for your Buildkite account.
 * **EventBridge Bus**: A AWS EventBridge bus that is associated with a Buildkite
 partner event source.
-* **ECS Cluster**: An ECS Cluster that will be used to schedule tasks.
-* **VPC Subnets**: VPC subnets to schedule tasks in, must have network access
-to the Buildkite API but can otherwise be public or private subnets.
+* **EKS Cluster**: An EKS Cluster that will be used to schedule jobs.
+* **Kubernetes namespace**: A kubernetes namespace to schedule jobs in.
+* **Kubernetes compute**: A kubernetes Node Group or Fategate Profile for pods
+in your given namespace to execute on.
 
-The [on-demand template](../) will create these resources for you. Consider
-whether you want to deploy the on-demand template instead.
+## Deploying
 
-## Deploy using the AWS Serverless Application Repository web console
+### Build the Lambda code
 
-[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-scheduler)
+First you must download the npm packages necessary for the Lambda code. In the
+`src/handlers/` directory run the following command in your shell:
 
-The serverless application repository console will ask you for values for the
-following parameters:
+```
+npm install
+```
 
-* **Application Name**: Use something descriptive, the default value of
-buildkite-on-demand-scheduler is fine.
-* **Parameter BuildkiteAgentTokenParameterPath**: An AWS SSM Parameter path that
-stores a Buildkite Agent Registration token for this deployment to use. This can
-be a `String` or `SecretString` parameter and must already exist. See the
-[Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens)
-for details.
-* **Parameter EventBridgeBusName**: The name of an Amazon EventBridge Bus
-associated with a Buildkite Partner Event source **NB** ensure you provide the
-name of the EventBus name _not_ the EventBus ARN.
-* **Parameter BuildkiteQueue**: The name of the Buildkite queue this stack will
-service. You will use this queue name in your Buildkite Pipeline Agent Query
-rules e.g. `queue=my-queue-name`.
-* **Parameter EcsClusterName**: The cluster name to schedule agent task
-definitions using.
-* **Parameter VpcSubnetIds**: A comma separated list of VPC subnet IDs to
-schedule agents in.
+### Deploy the Lambda code
 
-When creating the stack you will need to check the option to acknowledge that
-the app creates custom IAM roles.
+Next, you must deploy the Lambda function using the AWS Serverless Application
+Model CLI. The AWS SAM CLI is an extension of the AWS CLI that adds
+functionality for building and testing Lambda applications. See the Amazon
+documentation for help [installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+These instructions were written using SAM Version 1.33.0.
 
-## Deploy using the AWS Serverless Application Model command line interface
-
-The AWS SAM CLI is an extension of the AWS CLI that adds functionality for
-building and testing Lambda applications. See the Amazon documentation for help
-[installing the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). These instructions were
-written using SAM Version 0.40.0.
-
-To deploy `agent-scheduler` for the first time, run the following in your shell:
+To deploy `agent-scheduler` for the first time, run the following in your shell
+from this directory:
 
 ```bash
-sam deploy --capabilities CAPABILITY_IAM --guided
+sam deploy --guided
 ```
 
 This command will package and deploy `agent-scheduler` to your AWS account, and
@@ -78,14 +61,20 @@ the EventBus name _not_ the EventBus ARN.
 service. You will use this queue name in your Buildkite Pipeline Agent Query
 rules e.g. `queue=my-queue-name`.
 * **Parameter BuildkiteAgentTokenParameterPath**: An AWS SSM Parameter path that
-stores a Buildkite Agent Registration token for this deployment to use. This can
-be a `String` or `SecretString` parameter and must already exist. See the
+stores a Buildkite Agent Registration token for this deployment to use. This
+must be be a `String` parameter and must already exist. See the
 [Buildkite Agent Tokens Documentation](https://buildkite.com/docs/agent/v3/tokens)
 for details.
-* **Parameter VpcSubnetIds**: A comma separated list of VPC subnet IDs to
-schedule agents in.
-* **Parameter EcsClusterName**: The cluster name to schedule agent task
-definitions using.
+* **Parameter KubernetesClusterIdentifier**: The cluster name to schedule agent
+jobs on.
+* **Parameter KubernetesNamespace**: The cluster namespace to schedule agent
+jobs in. This namespace must already exist.
+* **Parameter KubernetesApiServerEndpoint**: The EKS cluster HTTPS endpoint to
+use for kubernetes API requests. This can be found on the EKS Dashboard under
+*<Your-Cluster>* > *Configuration* > *Details* > *API server endpoint*.
+* **Parameter KubernetesCertificateAuthorityData**: The EKS cluster Certificate
+authority data. This can be found on the EKS Dashboard under *<Your-Cluster>* >
+*Configuration* > *Details* > *Certificate authority*.
 * **Confirm changes before deploy**: If set to yes, any change sets will be
 shown to you before execution for manual review. If set to no, the AWS SAM CLI
 will automatically deploy changes.
@@ -96,3 +85,36 @@ permissions.
 * **Save arguments to samconfig.toml**: Set to yes so your choices are saved to
 a configuration file inside the project. In the future you can just re-run
 `sam deploy` without parameters to deploy changes.
+
+Subsequent deploys can be run using `sam deploy`.
+
+### Grant Kubernetes RBAC permissions
+
+Once you have deployed the `agent-scheduler` you must grant the Lambda’s IAM
+Role permission to create jobs in your Kubernetes cluster.
+
+These commands use the [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
+and [kubectl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
+command line utilities.
+
+Once you have installed `eksctl` and `kubectl`, verify that the `aws-auth`
+config map exists with the following command:
+
+```
+eksctl get iamidentitymapping --cluster <YOUR-CLUSTER> --region <YOUR-REGION>
+```
+
+Next, create an IAM mapping for the Lambda’s IAM Role. The Lambda’s IAM role
+ARN can be retrieved using the AWS Lambda Console.
+
+```
+eksctl create iamidentitymapping --cluster <YOUR-CLUSTER> --region <YOUR-REGION> --arn <YOUR-AGENT-SCHEDULER-ROLE-ARN> --username buildkite-on-demand-agent-scheduler
+```
+
+Finally, using the `kubectl` apply a `Role` and `RoleBinding` to grant the
+`buildkite-on-demand-agent-scheduler` user permission to create jobs:
+
+```
+eksctl utils write-kubeconfig --cluster <YOUR-CLUSTER>
+kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
+```
