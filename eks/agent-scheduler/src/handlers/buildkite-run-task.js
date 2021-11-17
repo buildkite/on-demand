@@ -76,31 +76,7 @@ async function sleep(ms){
     });
 }
 
-/*
-    Statically compute a k8s job for a buildkite job.
-
-    This is where you would implement custom k8s job spec look up based on the
-    Buildkite Job’s agent query rules.
-
-    Presently all jobs are run inside the buildkite/agent:3 image with no
-    sidecar containers.
-
-    Some ideas for where you could keep your library of named pod specs:
-
-    - inside this Lambda function, deploying a new version whenever you update a
-      pod spec
-    - in a git repository, fetching them by name/path at runtime
-    - on s3, fetching them by key at runtime
-
-    Some ideas for how this function could be adapted:
-
-    - add support for single container dynamic `image` using agent query rules
-    - map `cpu` and `memory` agent query rules to pod/container resource
-      requests
-    - add support for pod roles which can be mapped to IAM Roles outside the
-      cluster using OIDC
-*/
-async function kubernetesJobForBuildkiteJob(buildkiteJob) {
+async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
 
     // TODO: ideally this would not be stored in plaintext in the env, but
@@ -156,6 +132,40 @@ async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     k8sJob.spec = jobSpec;
 
     return k8sJob
+}
+
+/*
+    Statically compute a k8s job for a buildkite job.
+
+    This is where you would implement custom k8s job spec look up based on the
+    Buildkite Job’s agent query rules.
+
+    Presently all jobs are run inside the buildkite/agent:3 image with no
+    sidecar containers.
+
+    Some ideas for where you could keep your library of named pod specs:
+
+    - inside this Lambda function, deploying a new version whenever you update a
+      pod spec
+    - in a git repository, fetching them by name/path at runtime
+    - on s3, fetching them by key at runtime
+
+    Some ideas for how this function could be adapted:
+
+    - add support for single container dynamic `image` using agent query rules
+    - map `cpu` and `memory` agent query rules to pod/container resource
+      requests
+    - add support for pod roles which can be mapped to IAM Roles outside the
+      cluster using OIDC
+*/
+async function kubernetesJobForBuildkiteJob(buildkiteJob) {
+    let podDefinition = getAgentQueryRule("pod-definition", buildkiteJob.agent_query_rules);
+
+    if (podDefinition == "elastic-ci-stack") {
+        // TODO add pod defn for elastic ci stack
+    }
+
+    return defaultKubernetesJobForBuildkiteJob(buildkiteJob)
 }
 
 async function scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, buildkiteJob) {
