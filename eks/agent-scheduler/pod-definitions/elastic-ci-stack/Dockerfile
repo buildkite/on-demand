@@ -55,6 +55,8 @@ RUN yum install -y unzip && \
 	./aws/install && \
 	rm -r ./aws
 
+RUN yum install -y jq
+
 ENV GIT_LFS_RELEASE=2.10.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
