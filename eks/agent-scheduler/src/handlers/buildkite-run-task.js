@@ -229,6 +229,9 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     podSpec.volumes = [
         dockerSocketVolume,
     ]
+    podSpec.nodeSelector = {
+        "platform": "ec2",
+    }
     podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
