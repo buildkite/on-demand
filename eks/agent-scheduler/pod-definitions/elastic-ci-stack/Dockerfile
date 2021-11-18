@@ -85,6 +85,16 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 RUN mkdir -p /usr/local/buildkite-aws-stack/plugins
 COPY ["plugins/", "/usr/local/buildkite-aws-stack/plugins"]
 
+ENV S3_SECRETS_HELPER_VERSION=v2.1.5
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") secrets_arch=amd64 ;; \
+	"arm64/") secrets_arch=arm64 ;; \
+	"*") echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+	esac && \
+	curl --location --fail --show-error --output /usr/local/bin/s3secrets-helper "https://github.com/buildkite/elastic-ci-stack-s3-secrets-hooks/releases/download/${S3_SECRETS_HELPER_VERSION}/s3secrets-helper-linux-${secrets_arch}" && \
+	chmod +x /usr/local/bin/s3secrets-helper
+
 ENV TINI_VERSION=v0.19.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
