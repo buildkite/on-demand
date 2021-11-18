@@ -180,6 +180,11 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
     jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
 
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
+    const dockerSocketVolume = new k8s.V1Volume();
+    dockerSocketVolume.name = "docker-socket";
+    dockerSocketVolume.emptyDir = new k8s.V1EmptyDirVolumeSource();
+
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const agentMainContainer = new k8s.V1Container();
     agentMainContainer.name = "main"
@@ -188,12 +193,42 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
         agentTokenVar,
         jobIdVar,
     ]
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
+    const agentDockerMount = new k8s.V1VolumeMount();
+    agentDockerMount.mountPath = "/var/run/"
+    agentDockerMount.name = dockerSocketVolume.name
+    agentMainContainer.volumeMounts = [
+        agentDockerMount,
+    ]
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1SecurityContext.ts
+    const dindSecurityContext = new k8s.V1SecurityContext();
+    dindSecurityContext.privileged = true
+
+    const dindContainer = new k8s.V1Container();
+    dindContainer.name = "dockerd"
+    dindContainer.image = "20-dind"
+    dindContainer.securityContext = dindSecurityContext;
+    dindContainer.command = [
+        "dockerd"
+    ]
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
+    const dockerDockerMount = new k8s.V1VolumeMount();
+    dockerDockerMount.name = dockerSocketVolume.name
+    dockerDockerMount.mountPath = "/var/run/"
+    dindContainer.volumeMounts = [
+        dockerDockerMount,
+    ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
     const podSpec = new k8s.V1PodSpec();
     podSpec.containers = [
         agentMainContainer,
+        dindContainer,
     ];
+    podSpec.volumes = [
+        dockerSocketVolume,
+    ]
     podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
