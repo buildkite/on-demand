@@ -188,7 +188,7 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const agentMainContainer = new k8s.V1Container();
     agentMainContainer.name = "main"
-    agentMainContainer.image = "keithduncan/elastic-ci-stack"
+    agentMainContainer.image = "keithduncan/elastic-ci-stack:latest"
     agentMainContainer.env = [
         agentTokenVar,
         jobIdVar,
