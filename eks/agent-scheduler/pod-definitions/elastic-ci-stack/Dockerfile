@@ -34,7 +34,7 @@ ENV DOCKER_BUILDX_VERSION=0.5.1
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
   	"amd64/") buildx_arch=amd64 ;; \
-  	"arm64/") buildx_arch=aarch64 ;; \
+  	"arm64/") buildx_arch=arm64 ;; \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
     esac && \
     cli_dir=/usr/libexec/docker/cli-plugins && \
