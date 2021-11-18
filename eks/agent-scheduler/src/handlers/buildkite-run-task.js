@@ -134,6 +134,116 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     return k8sJob
 }
 
+async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
+    /*
+        Things to support:
+
+        amazonlinux:2 base image
+
+        buildkite-agent
+        docker (dind sidecar)
+        aws-cli
+        jq
+        git lfs
+        cloudwatch logs
+        aws ssm
+
+        environment hook
+        - s3-secrets plugin
+        - docker-login plugin
+        - ecr-login plugin
+
+        k8s role -> IAM role assume (in init-container), requires cluster OIDC
+        setup and configured IAM Role ARN
+    */
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+
+    // TODO: ideally this would not be stored in plaintext in the env, but
+    // supporting arbitrary containers and AssumeRole from k8s roles to get
+    // ssm:GetParameter support might not be possible
+    const agentTokenVar = new k8s.V1EnvVar();
+    agentTokenVar.name = "BUILDKITE_AGENT_TOKEN"
+    agentTokenVar.value = process.env.BUILDKITE_AGENT_TOKEN;
+
+    const jobIdVar = new k8s.V1EnvVar();
+    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
+    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts#L47
+    const agentVolume = new k8s.V1Volume();
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
+    const initVolumeMount = new k8s.V1VolumeMount();
+    initVolumeMount.mountPath = "/app"
+    initVolumeMount.name = "agent"
+
+    const agentInitContainer = new k8s.V1Container();
+    agentInitContainer.name = "agent"
+    agentInitContainer.image = "buildkite/agent:3-sidecar"
+    agentInitContainer.volumeMounts = [
+        initVolumeMount,
+    ]
+    agentInitContainer.args 
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
+    const mainVolumeMount = new k8s.V1VolumeMount();
+    mainVolumeMount.mountPath = "/buildkite"
+    mainVolumeMount.name = "agent"
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
+    const agentMainContainer = new k8s.V1Container();
+    agentMainContainer.name = "main"
+    agentMainContainer.image = "amazonlinux:2"
+    agentMainContainer.env = [
+        agentTokenVar,
+        jobIdVar,
+    ]
+    agentMainContainer.volumeMounts = [
+        mainVolumeMount,
+    ]
+    agentMainContainer.command = [
+        "/buildkite/bin/buildkite-agent"
+    ]
+    agentMainContainer.args = [
+        "start",
+        "--disconnect-after-job",
+        "--disconnect-after-idle-timeout=10"
+    ]
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
+    const podSpec = new k8s.V1PodSpec();
+    podSpec.initContainers = [
+        agentInitContainer,
+    ]
+    podSpec.containers = [
+        agentMainContainer,
+    ];
+    podSpec.restartPolicy = "Never"
+
+    const podTemplate = new k8s.V1PodTemplateSpec();
+    podTemplate.spec = podSpec;
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1JobSpec.ts
+    const jobSpec = new k8s.V1JobSpec();
+    jobSpec.template = podTemplate;
+    // Automatically clean up completed jobs after 10 minutes
+    jobSpec.ttlSecondsAfterFinished = 10 * 60;
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ObjectMeta.ts
+    const metadata = new k8s.V1ObjectMeta();
+    metadata.name = buildkiteJob.uuid || buildkiteJob.id
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Job.ts
+    const k8sJob = new k8s.V1Job();
+    k8sJob.apiVersion = 'batch/v1';
+    k8sJob.kind = 'Job';
+    k8sJob.metadata = metadata;
+    k8sJob.spec = jobSpec;
+
+    return k8sJob
+}
+
 /*
     Statically compute a k8s job for a buildkite job.
 
@@ -162,7 +272,7 @@ async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     let podDefinition = getAgentQueryRule("pod-definition", buildkiteJob.agent_query_rules);
 
     if (podDefinition == "elastic-ci-stack") {
-        // TODO add pod defn for elastic ci stack
+        return elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob)
     }
 
     return defaultKubernetesJobForBuildkiteJob(buildkiteJob)
