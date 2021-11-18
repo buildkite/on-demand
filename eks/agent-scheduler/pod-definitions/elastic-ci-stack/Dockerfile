@@ -107,5 +107,5 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
     curl --location --fail --show-error --output /sbin/tini "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${tini_arch}" && \
     chmod +x /sbin/tini
 
-ENTRYPOINT ["/sbin/tini", "-g", "--", "/usr/local/bin/buildkite-agent"]
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/usr/bin/buildkite-agent"]
 CMD ["start"]
