@@ -165,6 +165,11 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
         setup and configured IAM Role ARN
         init-container creds could expire, may need a pod sidecar that pretends
         to be the imds and returns live creds based on k8s -> IAM assume role
+
+        Things for polling agents:
+
+        - Add buildkite-agent-scaler analogue that drives a horizontal pod
+        autoscaler
     */
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
