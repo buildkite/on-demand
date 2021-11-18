@@ -15,7 +15,7 @@ RUN	case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"*") echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
 	esac && \
 	cd /tmp && \
-	curl --location --fail --silent --show-error --output docker.tgz "https://download.docker.com/linux/static/${DOCKER_RELEASE}/${docker_arch}/docker-${DOCKER_VERSION}.tgz" && \
+	curl --location --fail  --show-error --output docker.tgz "https://download.docker.com/linux/static/${DOCKER_RELEASE}/${docker_arch}/docker-${DOCKER_VERSION}.tgz" && \
 	tar -xvzf docker.tgz && \
 	mv docker/* /usr/bin && \
 	rm docker.tgz
@@ -27,29 +27,29 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"arm64/") compose_arch=aarch64 ;; \
 	"*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
 	esac && \
-	curl --location --fail --silent --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
+	curl --location --fail  --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
     chmod +x /usr/local/bin/docker-compose
 
 ENV DOCKER_BUILDX_VERSION=0.5.1
 
-RUN cli_dir=/usr/libexec/docker/cli-plugins && \
-	mkdir -p "${cli_dir}" && \
-	case "${TARGETARCH}/${TARGETVARIANT}" in \
-  	"amd64/") buildx_arch="amd64" ;; \
-  	"arm64/)  buildx_arch="aarch64" ;; \
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+  	"amd64/") buildx_arch=amd64 ;; \
+  	"arm64/") buildx_arch=aarch64 ;; \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
     esac && \
-	curl --location --fail --silent --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/v${DOCKER_BUILDX_VERSION}/buildx-v${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
+    cli_dir=/usr/libexec/docker/cli-plugins && \
+    mkdir -p "${cli_dir}" && \
+	curl --location --fail  --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/v${DOCKER_BUILDX_VERSION}/buildx-v${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
 	chmod +x "${cli_dir}/docker-buildx"
 
 RUN yum install -y unzip && \
 	cd /tmp && \
 	case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") aws_arch="x86_64" ;; \
-	"arm64/)  aws_arch="aarch64" ;; \
+	"arm64/") aws_arch="aarch64" ;; \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
     esac && \
-	curl --location --fail --silent --show-error --output awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" && \
+	curl --location --fail  --show-error --output awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" && \
 	unzip awscliv2.zip && \
 	rm awscliv2.zip && \
 	./aws/install && \
@@ -62,10 +62,10 @@ ENV GIT_LFS_RELEASE=2.10.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") lfs_arch="amd64" ;; \
-	"arm64/)  lfs_arch="arm64" ;; \
+	"arm64/") lfs_arch="arm64" ;; \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
     cd /tmp && \
-    curl --location --fail --silent --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-v${GIT_LFS_RELEASE}.tar.gz && \
+    curl --location --fail  --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-v${GIT_LFS_RELEASE}.tar.gz && \
     mkdir git-lfs && \
     tar -xvzf git-lfs.tgz -C git-lfs && \
     chmod 755 git-lfs/git-lfs && \
