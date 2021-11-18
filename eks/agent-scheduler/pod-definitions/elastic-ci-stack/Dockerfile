@@ -22,8 +22,8 @@ RUN	case "${TARGETARCH}/${TARGETVARIANT}" in \
 ENV DOCKER_COMPOSE_VERSION=2.1.1
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
-	"amd64/") compose_arch=amd64 ;; \
-	"arm64/") compose_arch=arm64 ;; \
+	"amd64/") compose_arch=x86_64 ;; \
+	"arm64/") compose_arch=aarch64 ;; \
 	"*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
 	esac && \
 	curl --location --fail --silent --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
