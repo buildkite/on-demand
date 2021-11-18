@@ -180,52 +180,17 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
     jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
 
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts#L47
-    const agentVolume = new k8s.V1Volume();
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
-    const initVolumeMount = new k8s.V1VolumeMount();
-    initVolumeMount.mountPath = "/app"
-    initVolumeMount.name = "agent"
-
-    const agentInitContainer = new k8s.V1Container();
-    agentInitContainer.name = "agent"
-    agentInitContainer.image = "buildkite/agent:3-sidecar"
-    agentInitContainer.volumeMounts = [
-        initVolumeMount,
-    ]
-    agentInitContainer.args 
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
-    const mainVolumeMount = new k8s.V1VolumeMount();
-    mainVolumeMount.mountPath = "/buildkite"
-    mainVolumeMount.name = "agent"
-
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const agentMainContainer = new k8s.V1Container();
     agentMainContainer.name = "main"
-    agentMainContainer.image = "amazonlinux:2"
+    agentMainContainer.image = "keithduncan/elastic-ci-stack"
     agentMainContainer.env = [
         agentTokenVar,
         jobIdVar,
     ]
-    agentMainContainer.volumeMounts = [
-        mainVolumeMount,
-    ]
-    agentMainContainer.command = [
-        "/buildkite/bin/buildkite-agent"
-    ]
-    agentMainContainer.args = [
-        "start",
-        "--disconnect-after-job",
-        "--disconnect-after-idle-timeout=10"
-    ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
     const podSpec = new k8s.V1PodSpec();
-    podSpec.initContainers = [
-        agentInitContainer,
-    ]
     podSpec.containers = [
         agentMainContainer,
     ];
