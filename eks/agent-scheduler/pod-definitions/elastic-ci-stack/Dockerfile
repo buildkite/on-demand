@@ -41,6 +41,19 @@ RUN cli_dir=/usr/libexec/docker/cli-plugins && \
 	curl --location --fail --silent --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/v${DOCKER_BUILDX_VERSION}/buildx-v${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
 	chmod +x "${cli_dir}/docker-buildx"
 
+RUN yum install -y unzip && \
+	cd /tmp && \
+	case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") aws_arch="x86_64" ;; \
+	"arm64/)  aws_arch="aarch64" ;; \
+    "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+	curl --location --fail --silent --show-error --output awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" && \
+	unzip awscliv2.zip && \
+	rm awscliv2.zip && \
+	./aws/install && \
+	rm -r ./aws
+
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") agent_arch=x86_64 ;; \
 	"arm64/") agent_arch=aarch64 ;; \
