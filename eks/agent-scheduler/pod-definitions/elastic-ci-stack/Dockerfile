@@ -20,17 +20,17 @@ RUN	case "${TARGETARCH}/${TARGETVARIANT}" in \
 	mv docker/* /usr/bin && \
 	rm docker.tgz
 
-ENV DOCKER_COMPOSE_VERSION=2.1.1
+ENV DOCKER_COMPOSE_VERSION=v2.1.1
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") compose_arch=x86_64 ;; \
 	"arm64/") compose_arch=aarch64 ;; \
 	"*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
 	esac && \
-	curl --location --fail  --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
+	curl --location --fail  --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
     chmod +x /usr/local/bin/docker-compose
 
-ENV DOCKER_BUILDX_VERSION=0.7.0
+ENV DOCKER_BUILDX_VERSION=v0.7.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
   	"amd64/") buildx_arch=amd64 ;; \
@@ -39,7 +39,7 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
     esac && \
     cli_dir=/usr/libexec/docker/cli-plugins && \
     mkdir -p "${cli_dir}" && \
-	curl --location --fail  --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/v${DOCKER_BUILDX_VERSION}/buildx-v${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
+	curl --location --fail  --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
 	chmod +x "${cli_dir}/docker-buildx"
 
 RUN yum install -y unzip && \
@@ -58,7 +58,7 @@ RUN yum install -y unzip && \
 
 RUN yum install -y jq
 
-ENV GIT_LFS_RELEASE=2.10.0
+ENV GIT_LFS_RELEASE=v2.10.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") lfs_arch="amd64" ;; \
@@ -66,7 +66,7 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
     esac && \
     cd /tmp && \
-    curl --location --fail  --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-v${GIT_LFS_RELEASE}.tar.gz && \
+    curl --location --fail  --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-${GIT_LFS_RELEASE}.tar.gz && \
     mkdir git-lfs && \
     tar -xvzf git-lfs.tgz -C git-lfs && \
     chmod 755 git-lfs/git-lfs && \
