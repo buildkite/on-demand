@@ -207,7 +207,7 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
     const dindContainer = new k8s.V1Container();
     dindContainer.name = "dockerd"
-    dindContainer.image = "20-dind"
+    dindContainer.image = "docker:20-dind"
     dindContainer.securityContext = dindSecurityContext;
     dindContainer.command = [
         "dockerd"
