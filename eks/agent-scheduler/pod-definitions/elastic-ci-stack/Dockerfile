@@ -81,3 +81,16 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	esac && \
 	echo -e "[buildkite-agent]\nname = Buildkite Pty Ltd\nbaseurl = https://yum.buildkite.com/buildkite-agent/stable/${agent_arch}/\nenabled=1\ngpgcheck=0\npriority=1" > /etc/yum.repos.d/buildkite-agent.repo && \
 	yum install -y buildkite-agent
+
+ENV TINI_VERSION=v0.19.0
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") tini_arch=amd64 ;; \
+	"arm64/") tini_arch=arm64 ;; \
+	"*") 	  echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+    curl --location --fail --show-error --output /sbin/tini "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${tini_arch}" && \
+    chmod +x /sbin/tini
+
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/usr/local/bin/buildkite-agent"]
+CMD ["start"]
