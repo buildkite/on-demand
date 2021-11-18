@@ -53,7 +53,8 @@ RUN yum install -y unzip && \
 	unzip awscliv2.zip && \
 	rm awscliv2.zip && \
 	./aws/install && \
-	rm -r ./aws
+	rm -r ./aws && \
+	aws configure set s3.signature_version s3v4
 
 RUN yum install -y jq
 
