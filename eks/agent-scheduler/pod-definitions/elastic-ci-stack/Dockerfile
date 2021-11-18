@@ -82,6 +82,9 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	echo -e "[buildkite-agent]\nname = Buildkite Pty Ltd\nbaseurl = https://yum.buildkite.com/buildkite-agent/stable/${agent_arch}/\nenabled=1\ngpgcheck=0\npriority=1" > /etc/yum.repos.d/buildkite-agent.repo && \
 	yum install -y buildkite-agent
 
+RUN mkdir -p /usr/local/buildkite-aws-stack/plugins
+COPY ["plugins/", "/usr/local/buildkite-aws-stack/plugins"]
+
 ENV TINI_VERSION=v0.19.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
