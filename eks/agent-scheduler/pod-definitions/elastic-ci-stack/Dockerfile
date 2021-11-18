@@ -55,6 +55,21 @@ RUN yum install -y unzip && \
 	./aws/install && \
 	rm -r ./aws
 
+ENV GIT_LFS_RELEASE=2.10.0
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") lfs_arch="amd64" ;; \
+	"arm64/)  lfs_arch="arm64" ;; \
+    "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    cd /tmp && \
+    curl --location --fail --silent --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-v${GIT_LFS_RELEASE}.tar.gz && \
+    mkdir git-lfs && \
+    tar -xvzf git-lfs.tgz -C git-lfs && \
+    chmod 755 git-lfs/git-lfs && \
+    ./git-lfs/install.sh && \
+    rm -rf git-lfs.tgz ./git-lfs && \
+    git lfs install
+
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") agent_arch=x86_64 ;; \
 	"arm64/") agent_arch=aarch64 ;; \
