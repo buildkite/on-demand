@@ -64,6 +64,7 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	"amd64/") lfs_arch="amd64" ;; \
 	"arm64/") lfs_arch="arm64" ;; \
     "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
     cd /tmp && \
     curl --location --fail  --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-v${GIT_LFS_RELEASE}.tar.gz && \
     mkdir git-lfs && \
