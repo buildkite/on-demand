@@ -1,3 +1,13 @@
 [submodule "ecs/template"]
 	path = ecs/template
 	url = https://github.com/buildkite/on-demand-template
+
+[submodule "eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/docker-login"]
+	path = eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/docker-login
+	url = https://github.com/buildkite-plugins/docker-login-buildkite-plugin.git
+[submodule "eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/ecr"]
+	path = eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/ecr
+	url = https://github.com/buildkite-plugins/ecr-buildkite-plugin.git
+[submodule "eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/secrets"]
+	path = eks/agent-scheduler/pod-definitions/elastic-ci-stack/plugins/secrets
+	url = https://github.com/buildkite/elastic-ci-stack-s3-secrets-hooks.git
