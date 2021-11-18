@@ -155,9 +155,9 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
         Things to support at boot time:
 
-        sshd? + authorized keys param
         bootstrap script
         customise buildkite-agent config
+        sshd? + authorized keys param
         git-mirrors
         edge agent install?
 
