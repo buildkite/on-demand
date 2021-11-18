@@ -30,7 +30,7 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	curl --location --fail  --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
     chmod +x /usr/local/bin/docker-compose
 
-ENV DOCKER_BUILDX_VERSION=0.5.1
+ENV DOCKER_BUILDX_VERSION=0.7.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
   	"amd64/") buildx_arch=amd64 ;; \
