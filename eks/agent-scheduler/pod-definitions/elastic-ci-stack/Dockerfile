@@ -3,7 +3,8 @@ FROM amazonlinux:2
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-RUN yum install -y curl tar gzip
+RUN yum update -y && \
+	yum install -y curl tar zip gzip pigz git
 
 ENV DOCKER_VERSION=20.10.9
 ENV DOCKER_RELEASE=stable
