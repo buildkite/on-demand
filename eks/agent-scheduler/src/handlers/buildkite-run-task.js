@@ -109,7 +109,6 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     podSpec.containers = [
         buildkiteAgentContainer,
     ];
-    podSpec.serviceAccountName = "elastic-ci-stack"
     podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
@@ -238,6 +237,7 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     podSpec.nodeSelector = {
         "platform": "ec2",
     }
+    podSpec.serviceAccountName = "elastic-ci-stack"
     podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
