@@ -115,7 +115,8 @@ Finally, using the `kubectl` apply a `Role` and `RoleBinding` to grant the
 `buildkite-on-demand-agent-scheduler` user permission to create jobs:
 
 ```
-eksctl utils write-kubeconfig --cluster <YOUR-CLUSTER>
+eksctl utils write-kubeconfig --cluster <YOUR-CLUSTER> --region <YOUR-REGION>
+kubectl create namespace buildkite
 kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
 ```
 
