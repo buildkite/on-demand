@@ -1,0 +1,6 @@
+brew "homebrew/cask/aws-vault"
+brew "awscli"
+brew "node"
+brew "eksctl"
+brew "kubectl"
+brew "aws-sam-cli"
