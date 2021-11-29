@@ -120,6 +120,11 @@ kubectl create namespace buildkite
 kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
 ```
 
+### Create an IAM role, policy, and service account mapping for the elastic-ci-stack pod definition
+
+See [pod-definitions/elastic-ci-stack/iam](pod-definitions/elastic-ci-stack/iam)
+for instructions.
+
 TODO
 
 Docs on mixing fargate and ec2, elastic-ci-stack pod definition will
@@ -131,3 +136,7 @@ pulling platform:ec2 pods.
 Add something like https://github.com/nrmitchi/k8s-controller-sidecars
 that will terminate sidecar containers if the "main" / agent container
 in a pod has exited.
+
+Add way to stamp out multiple different 'elastic-ci-stack' pod definitions
+each with their own service account and IAM role, likely using terraform
+for multi-provider operations.
