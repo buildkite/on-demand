@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euxo pipefail
 
 # Required environment variables:
