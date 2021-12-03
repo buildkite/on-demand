@@ -173,10 +173,57 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     */
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
-
-    const jobIdVar = new k8s.V1EnvVar();
-    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
-    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
+    const secretsEnabledVar = new k8s.V1EnvVar()
+    secretsEnabledVar.name = "SECRETS_PLUGIN_ENABLED"
+    secretsEnabledVar.value = "true"
+    const ecrEnabledVar = new k8s.V1EnvVar()
+    ecrEnabledVar.name = "ECR_PLUGIN_ENABLED"
+    ecrEnabledVar.value = "true"
+    const dockerLoginEnabledVar = new k8s.V1EnvVar()
+    dockerLoginEnabledVar.name = "DOCKER_LOGIN_PLUGIN_ENABLED"
+    dockerLoginEnabledVar.value = "true"
+    const agentsPerInstanceVar = new k8s.V1EnvVar()
+    agentsPerInstanceVar.name = "BUILDKITE_AGENTS_PER_INSTANCE"
+    agentsPerInstanceVar.value = "1"
+    const ecrPolicyVar = new k8s.V1EnvVar()
+    ecrPolicyVar.name = "BUILDKITE_ECR_POLICY"
+    ecrPolicyVar.value = "full"
+    const secretsBucketVar = new k8s.V1EnvVar()
+    secretsBucketVar.name = "BUILDKITE_SECRETS_BUCKET"
+    secretsBucketVar.value = "buildkite-crossregiontest"
+    const stackNameVar = new k8s.V1EnvVar()
+    stackNameVar.name = "BUILDKITE_STACK_NAME"
+    stackNameVar.value = "buildkite-on-demand-eks-elastic-ci-stack"
+    const stackVersionVar = new k8s.V1EnvVar()
+    stackVersionVar.name = "BUILDKITE_STACK_VERSION"
+    stackVersionVar.value = "0.0.0"
+    const dockerExperimentalVar = new k8s.V1EnvVar()
+    dockerExperimentalVar.name = "DOCKER_EXPERIMENTAL"
+    dockerExperimentalVar.value = "true"
+    const regionVar = new k8s.V1EnvVar()
+    regionVar.name = "AWS_REGION"
+    regionVar.value = "us-east-1"
+    const defaultRegionVar = new k8s.V1EnvVar()
+    defaultRegionVar.name = "AWS_DEFAULT_REGION"
+    defaultRegionVar.value = "us-east-1"
+    const buildkiteQueueVar = new k8s.V1EnvVar()
+    buildkiteQueueVar.name = "BUILDKITE_QUEUE"
+    buildkiteQueueVar.value = "eks"
+    const buildkiteAgentTagsVar = new k8s.V1EnvVar()
+    buildkiteAgentTagsVar.name = "BUILDKITE_AGENT_TAGS"
+    buildkiteAgentTagsVar.value = "kubernetes=true"
+    const instanceIdVar = new k8s.V1EnvVar()
+    instanceIdVar.name = "INSTANCE_ID"
+    instanceIdVar.valueFrom = 
+    const timestampLinesVar = new k8s.V1EnvVar()
+    timestampLinesVar.name = "BUILDKITE_AGENT_TIMESTAMP_LINES"
+    timestampLinesVar.value = "false"
+    const experimentsVar = new k8s.V1EnvVar()
+    experimentsVar.name = "BUILDKITE_AGENT_EXPERIMENTS"
+    experimentsVar.value = ""
+    const bootstrapScriptVar = new k8s.V1EnvVar()
+    bootstrapScriptVar.name = "BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT"
+    bootstrapScriptVar.value = ""
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
     const etcBuildkiteVolume = new k8s.V1Volume();
@@ -204,6 +251,11 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     const dockerSocketVolume = new k8s.V1Volume();
     dockerSocketVolume.name = "docker-socket";
     dockerSocketVolume.emptyDir = new k8s.V1EmptyDirVolumeSource();
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+    const jobIdVar = new k8s.V1EnvVar();
+    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
+    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const agentMainContainer = new k8s.V1Container();

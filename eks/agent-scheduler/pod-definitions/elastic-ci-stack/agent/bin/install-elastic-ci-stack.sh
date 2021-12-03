@@ -126,3 +126,5 @@ if ! docker ps ; then
   echo "Failed to contact docker"
   exit 1
 fi
+
+exec "/usr/bin/buildkite-agent" start
