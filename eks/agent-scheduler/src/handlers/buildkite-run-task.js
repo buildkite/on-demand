@@ -229,6 +229,9 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     const bootstrapScriptVar = new k8s.V1EnvVar()
     bootstrapScriptVar.name = "BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT"
     bootstrapScriptVar.value = ""
+    const buildkiteAgentTokenPathVar = new k8s.V1EnvVar()
+    buildkiteAgentTokenPathVar.name = "BUILDKITE_AGENT_TOKEN_PATH"
+    buildkiteAgentTokenPathVar.value = "/buildkite-aws-stack-testing/buildkite/agent-token"
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
     const dockerSocketVolume = new k8s.V1Volume();
@@ -245,6 +248,24 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     agentMainContainer.name = "main"
     agentMainContainer.image = "keithduncan/elastic-ci-stack:latest"
     agentMainContainer.env = [
+        secretsEnabledVar,
+        ecrEnabledVar,
+        dockerLoginEnabledVar,
+        agentsPerInstanceVar,
+        ecrPolicyVar,
+        secretsBucketVar,
+        stackNameVar,
+        stackVersionVar,
+        dockerExperimentalVar,
+        regionVar,
+        defaultRegionVar,
+        buildkiteQueueVar,
+        buildkiteAgentTagsVar,
+        instanceIdVar,
+        timestampLinesVar,
+        experimentsVar,
+        bootstrapScriptVar,
+        buildkiteAgentTokenPathVar,
         jobIdVar,
     ]
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
