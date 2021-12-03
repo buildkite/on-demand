@@ -19,8 +19,6 @@ set -euxo pipefail
 # BUILDKITE_AGENT_EXPERIMENTS
 # BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT
 
-DOCKER_VERSION=$(docker --version | cut -f3 -d' ' | sed 's/,//')
-
 PLUGINS_ENABLED=()
 [[ $SECRETS_PLUGIN_ENABLED == "true" ]] && PLUGINS_ENABLED+=("secrets")
 [[ $ECR_PLUGIN_ENABLED == "true" ]] && PLUGINS_ENABLED+=("ecr")
@@ -72,7 +70,6 @@ set_always         "BUILDKITE_SECRETS_BUCKET" "$BUILDKITE_SECRETS_BUCKET"
 set_always         "BUILDKITE_STACK_NAME" "$BUILDKITE_STACK_NAME"
 set_always         "BUILDKITE_STACK_VERSION" "$BUILDKITE_STACK_VERSION"
 set_always         "BUILDKITE_DOCKER_EXPERIMENTAL" "$DOCKER_EXPERIMENTAL"
-set_always         "DOCKER_VERSION" "$DOCKER_VERSION"
 set_always         "PLUGINS_ENABLED" "${PLUGINS_ENABLED[*]-}"
 set_unless_present "AWS_DEFAULT_REGION" "$AWS_REGION"
 set_unless_present "AWS_REGION" "$AWS_REGION"
@@ -80,7 +77,6 @@ EOF
 
 agent_metadata=(
 	"queue=${BUILDKITE_QUEUE}"
-	"docker=${DOCKER_VERSION}"
 	"stack=${BUILDKITE_STACK_NAME}"
 	"buildkite-eks-stack=${BUILDKITE_STACK_VERSION}"
 )
