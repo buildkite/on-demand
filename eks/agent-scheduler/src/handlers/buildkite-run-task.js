@@ -174,16 +174,31 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
 
-    // TODO: ideally this would not be stored in plaintext in the env, but
-    // supporting arbitrary containers and AssumeRole from k8s roles to get
-    // ssm:GetParameter support might not be possible
-    const agentTokenVar = new k8s.V1EnvVar();
-    agentTokenVar.name = "BUILDKITE_AGENT_TOKEN"
-    agentTokenVar.value = process.env.BUILDKITE_AGENT_TOKEN;
-
     const jobIdVar = new k8s.V1EnvVar();
     jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
     jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
+    const etcBuildkiteVolume = new k8s.V1Volume();
+    etcBuildkiteVolume.name = "etc-buildkite";
+    etcBuildkiteVolume.emptyDir = new k8s.V1EmptyDirVolumeSource();
+
+    const installContainer = new k8s.V1Container();
+    installContainer.name = "install"
+    installContainer.image = "keithduncan/elastic-ci-stack-init:latest"
+    installContainer.env = [
+        // TODO all the required env vars
+    ]
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
+    const installEtcBuildkiteMount = new k8s.V1VolumeMount();
+    installEtcBuildkiteMount.mountPath = "/etc/buildkite-agent/"
+    installEtcBuildkiteMount.name = etcBuildkiteVolume.name
+    agentMainContainer.volumeMounts = [
+        installEtcBuildkiteMount,
+    ]
+    installContainer.command = [
+        "/usr/bin/install-elastic-ci-stack.sh"
+    ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
     const dockerSocketVolume = new k8s.V1Volume();
@@ -195,15 +210,18 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     agentMainContainer.name = "main"
     agentMainContainer.image = "keithduncan/elastic-ci-stack:latest"
     agentMainContainer.env = [
-        agentTokenVar,
         jobIdVar,
     ]
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
     const agentDockerMount = new k8s.V1VolumeMount();
     agentDockerMount.mountPath = "/var/run/"
     agentDockerMount.name = dockerSocketVolume.name
+    const agentEtcBuildkiteMount = new k8s.V1VolumeMount();
+    agentEtcBuildkiteMount.mountPath = "/etc/buildkite-agent/"
+    agentEtcBuildkiteMount.name = etcBuildkiteVolume.name
     agentMainContainer.volumeMounts = [
         agentDockerMount,
+        agentEtcBuildkiteMount,
     ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1SecurityContext.ts
@@ -227,10 +245,13 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
     const podSpec = new k8s.V1PodSpec();
+    podSpec.initContainers = [
+        installContainer,
+    ]
     podSpec.containers = [
         agentMainContainer,
         dindContainer,
-    ];
+    ]
     podSpec.volumes = [
         dockerSocketVolume,
     ]
