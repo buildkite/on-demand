@@ -115,3 +115,14 @@ if [[ -n "${BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT}" ]] ; then
 	bash < /tmp/elastic_bootstrap
 	rm /tmp/elastic_bootstrap
 fi
+
+# wait for docker to start
+next_wait_time=0
+until docker ps || [ $next_wait_time -eq 20 ]; do
+	sleep $(( next_wait_time++ ))
+done
+
+if ! docker ps ; then
+  echo "Failed to contact docker"
+  exit 1
+fi
