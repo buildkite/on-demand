@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -eu -o pipefail
+
+password_var="${BUILDKITE_PLUGIN_DOCKER_LOGIN_PASSWORD_ENV:-DOCKER_LOGIN_PASSWORD}"
+
+if [[ -z "${!password_var:-}" ]] ; then
+  echo "+++ 🚨 No docker-login password found in \$${password_var}"
+  exit 1
+fi
+
+login_args=(
+  "--username" "${BUILDKITE_PLUGIN_DOCKER_LOGIN_USERNAME}"
+  "--password-stdin"
+)
+
+if [[ -n "${BUILDKITE_PLUGIN_DOCKER_LOGIN_SERVER:-}" ]] ; then
+  login_args+=("${BUILDKITE_PLUGIN_DOCKER_LOGIN_SERVER}")
+fi
+
+# Retries a command on failure.
+function retry() {
+  local -r -i retries="$1"; shift
+  local -i max_attempts=$((retries + 1))
+  local -i attempt_num=1
+  local exit_code
+  local stdin_value
+
+  if [[ "$1" == "--with-stdin" ]]; then
+    read -sr stdin_value
+    shift
+  fi
+
+  while (( attempt_num <= max_attempts )); do
+    set +e
+    "$@" <<< "${stdin_value:-}"
+    exit_code=$?
+    set -e
+
+    if [[ $retries -eq 0 ]] || [[ $exit_code -eq 0 ]]; then
+      return $exit_code
+    elif (( attempt_num == max_attempts )) ; then
+      echo "Login failed after $attempt_num attempts" >&2
+      return $exit_code
+    else
+      echo "Login failed on attempt ${attempt_num} of ${max_attempts}. Trying again in $attempt_num seconds..." >&2
+      sleep $(( attempt_num++ ))
+    fi
+  done
+}
+
+echo "~~~ :docker: Logging into docker registry ${BUILDKITE_PLUGIN_DOCKER_LOGIN_SERVER:-}"
+retry "${BUILDKITE_PLUGIN_DOCKER_LOGIN_RETRIES:-0}" --with-stdin docker login "${login_args[@]}" <<< "${!password_var:-}"

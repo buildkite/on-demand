@@ -1,0 +1,19 @@
+name: Docker Login
+description: Login to Docker registries in your build steps
+author: https://github.com/lox
+requirements:
+  - bash
+  - docker
+configuration:
+  properties:
+    username:
+      type: string
+    server:
+      type: string
+    password-env:
+      type: string
+    retries:
+      type: number
+      default: 0
+  required:
+    - username
