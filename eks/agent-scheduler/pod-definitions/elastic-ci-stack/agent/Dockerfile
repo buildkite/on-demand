@@ -100,6 +100,8 @@ COPY ["hooks/", "/var/lib/buildkite-agent/hooks"]
 
 RUN mkdir -p /etc/buildkite-agent/
 
+COPY ["bin/", "/usr/local/bin"]
+
 ENV TINI_VERSION=v0.19.0
 
 RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
