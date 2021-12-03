@@ -1,4 +1,0 @@
-# Config for https://github.com/apps/boomper-bot
-updates:
-- path: README.md
-  pattern: 'ecr#(.*):'
