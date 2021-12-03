@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 echo "~~~ :earth_asia: Setting up environment variables"
 # shellcheck source=/dev/null
-[ -f ~/cfn-env ] && source ~/cfn-env
+[ -f /etc/buildkite-agent/env ] && source /etc/buildkite-agent/env
 
 # a clean docker config for each job, for improved isolation
 BUILDKITE_DOCKER_CONFIG_TEMP_DIRECTORY=$(mktemp -d)

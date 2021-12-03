@@ -95,7 +95,10 @@ RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
 	curl --location --fail --show-error --output /usr/local/bin/s3secrets-helper "https://github.com/buildkite/elastic-ci-stack-s3-secrets-hooks/releases/download/${S3_SECRETS_HELPER_VERSION}/s3secrets-helper-linux-${secrets_arch}" && \
 	chmod +x /usr/local/bin/s3secrets-helper
 
-COPY ["hooks/", "/etc/buildkite-agent/hooks"]
+RUN mkdir -p /var/lib/buildkite-agent/hooks
+COPY ["hooks/", "/var/lib/buildkite-agent/hooks"]
+
+RUN mkdir -p /etc/buildkite-agent/
 
 ENV TINI_VERSION=v0.19.0
 
