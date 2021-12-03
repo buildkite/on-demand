@@ -173,6 +173,7 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     */
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+    // TODO generate this from a CloudFormation JSON parameter file?
     const secretsEnabledVar = new k8s.V1EnvVar()
     secretsEnabledVar.name = "SECRETS_PLUGIN_ENABLED"
     secretsEnabledVar.value = "true"
@@ -212,9 +213,13 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     const buildkiteAgentTagsVar = new k8s.V1EnvVar()
     buildkiteAgentTagsVar.name = "BUILDKITE_AGENT_TAGS"
     buildkiteAgentTagsVar.value = "kubernetes=true"
+    const instanceIdVarFieldRef = new k8s.V1ObjectFieldSelector()
+    instanceIdVarFieldRef.fieldPath = "metadata.name"
+    const instanceIdVarSource = new k8s.V1EnvVarSource()
+    instanceIdVarSource.fieldRef = instanceIdVarFieldRef
     const instanceIdVar = new k8s.V1EnvVar()
     instanceIdVar.name = "INSTANCE_ID"
-    instanceIdVar.valueFrom = 
+    instanceIdVar.valueFrom = instanceIdVarSource
     const timestampLinesVar = new k8s.V1EnvVar()
     timestampLinesVar.name = "BUILDKITE_AGENT_TIMESTAMP_LINES"
     timestampLinesVar.value = "false"
@@ -224,28 +229,6 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     const bootstrapScriptVar = new k8s.V1EnvVar()
     bootstrapScriptVar.name = "BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT"
     bootstrapScriptVar.value = ""
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
-    const etcBuildkiteVolume = new k8s.V1Volume();
-    etcBuildkiteVolume.name = "etc-buildkite";
-    etcBuildkiteVolume.emptyDir = new k8s.V1EmptyDirVolumeSource();
-
-    const installContainer = new k8s.V1Container();
-    installContainer.name = "install"
-    installContainer.image = "keithduncan/elastic-ci-stack-init:latest"
-    installContainer.env = [
-        // TODO all the required env vars
-    ]
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
-    const installEtcBuildkiteMount = new k8s.V1VolumeMount();
-    installEtcBuildkiteMount.mountPath = "/etc/buildkite-agent/"
-    installEtcBuildkiteMount.name = etcBuildkiteVolume.name
-    agentMainContainer.volumeMounts = [
-        installEtcBuildkiteMount,
-    ]
-    installContainer.command = [
-        "/usr/bin/install-elastic-ci-stack.sh"
-    ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
     const dockerSocketVolume = new k8s.V1Volume();
@@ -268,12 +251,8 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     const agentDockerMount = new k8s.V1VolumeMount();
     agentDockerMount.mountPath = "/var/run/"
     agentDockerMount.name = dockerSocketVolume.name
-    const agentEtcBuildkiteMount = new k8s.V1VolumeMount();
-    agentEtcBuildkiteMount.mountPath = "/etc/buildkite-agent/"
-    agentEtcBuildkiteMount.name = etcBuildkiteVolume.name
     agentMainContainer.volumeMounts = [
         agentDockerMount,
-        agentEtcBuildkiteMount,
     ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1SecurityContext.ts
@@ -297,9 +276,6 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
     const podSpec = new k8s.V1PodSpec();
-    podSpec.initContainers = [
-        installContainer,
-    ]
     podSpec.containers = [
         agentMainContainer,
         dindContainer,
