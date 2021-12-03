@@ -203,10 +203,10 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     dockerExperimentalVar.value = "true"
     const regionVar = new k8s.V1EnvVar()
     regionVar.name = "AWS_REGION"
-    regionVar.value = "us-east-1"
+    regionVar.value = process.env.AWS_REGION
     const defaultRegionVar = new k8s.V1EnvVar()
     defaultRegionVar.name = "AWS_DEFAULT_REGION"
-    defaultRegionVar.value = "us-east-1"
+    defaultRegionVar.value = process.env.AWS_REGION
     const buildkiteQueueVar = new k8s.V1EnvVar()
     buildkiteQueueVar.name = "BUILDKITE_QUEUE"
     buildkiteQueueVar.value = "eks"
