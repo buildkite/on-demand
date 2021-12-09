@@ -19,6 +19,7 @@ Metadata:
           default: AWS
         Parameters:
           - EventBridgeBusName
+          - VpcSubnets
       -
         Label:
           default: Kubernetes
@@ -32,6 +33,14 @@ Parameters:
     Type: String
     Description: Name of an EventBridge Bus in this region that receives Buildkite Partner Events, see https://buildkite.com/docs/integrations/amazon-eventbridge.
     AllowedPattern: ^[a-zA-Z0-9\-\._/]+
+  VpcSubnets:
+    Type: CommaDelimitedList
+    Description: Optional – VPC Subnet Ids that the agent-scheduler Lambda should receive an ENI in. Required if your Kubernetes cluster is *Private*.
+    Default: ""
+  VpcSecurityGroupIds:
+    Type: CommaDelimitedList
+    Description: Optional – VPC Security Group Ids that the agent-scheduler Lambda ENI should belong to. Required if your Kubernetes cluster is *Private*.
+    Default: ""
   BuildkiteQueue:
     Type: String
     Description: Queue name that agents will be scheduled for on-demand, targeted in pipeline steps using an agent query rule "queue={value}".
@@ -53,6 +62,10 @@ Parameters:
   KubernetesCertificateAuthorityData:
     Type: String
     Description: The Certificate Authority Data for the kubernetes cluster API server.
+
+Conditions:
+  HasVpc:
+    !Not [ !Equals [ "", !Join [ "", !Ref VpcSubnets ] ] ]
 
 Resources:
   RunTaskQueue:
@@ -131,6 +144,12 @@ Resources:
           KUBERNETES_CERTIFICATE_AUTHORITY_DATA: !Ref KubernetesCertificateAuthorityData
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
           BUILDKITE_AGENT_TOKEN: !Ref BuildkiteAgentTokenParameterPath
+      VpcConfig:
+        !If
+          - HasVpc
+          - SubnetIds: !Ref VpcSubnets
+            SecurityGroupIds: !Ref VpcSecurityGroupIds
+          - !Ref AWS::NoValue
   RunTaskLogGroup:
     Type: AWS::Logs::LogGroup
     DependsOn: BuildkiteRunTask
