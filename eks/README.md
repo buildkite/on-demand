@@ -37,10 +37,10 @@ of EC2 Node Groups, and privileged pods for Docker in Docker.
 The **one-shot** pod scheduler currently runs as an AWS Lambda
 that is invoked via AWS EventBridge. This can be made generic
 by running the Lambda code in a pod on the Kubernetes cluster directly,
-configuring and exposing a publicly routed a load balancer for the pod
+configuring and exposing a publicly routed load balancer for the pod
 scheduler, setting up a webhook between your Buildkite Organisation and
 the pod scheduler load balancer, coordinating and configuring the webhook 
-authentication between Buildkite and the pod scheduler, enabling
+authentication between Buildkite and the pod scheduler, and enabling
 "Job Scheduled" events for your webhook.
 
 The **one-shot** pod scheduler currently uses IAM Authentication and
@@ -53,7 +53,7 @@ to self-schedule pods on the hosting cluster.
 
 The **elastic-ci-stack** pod definition is necessarily AWS specific
 by nature and mimics the EC2-based Elastic CI Stack for AWS. It
-uses S3 to retrieve secrets, and can be configured to login to ECR.
+uses AWS S3 to retrieve secrets, and can be configured to login to AWS ECR.
 In order to authenticate access to these services, an IAM IdP provider
 for the EKS OpenID Connect service must be configured, and a mapping
 between the pod’s service account and an IAM Role provided.
