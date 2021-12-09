@@ -1,16 +1,28 @@
 # Buildkite On-Demand EKS
 
-Schedule Buildkite Agents on AWS EKS.
-
-Buildkite On-Demand EKS is a Buildkite Agent scheduler. Built on
-the Buildkite AWS EventBridge integration, containerised Buildkite Agents are
-scheduled using Amazon Elastic Kubernetes Service to run on AWS Fargate or EC2.
-
-This repository contains resources and documentation to help you configure an
-AWS account to schedule and run agents for your Buildkite Organization.
+Schedule Buildkite Agents on AWS EKS using Fargate or EC2.
 
 Buildkite On-Demand EKS is an AWS EKS / Kubernetes specific implementation
-of the Buildkite-On Demand pattern.
+of the Buildkite Agent scheduler pattern. This repository contains resources
+and documentation to help you configure an AWS account to schedule and run
+containerised agents for your Buildkite Organization.
+
+There are two ways to run your Buildkite Agents:
+
+**One-shot** agents are scheduled in a Kubernetes Job and run a single Buildkite
+job. Built on the Buildkite AWS EventBridge integration, containerised Buildkite
+Agents are scheduled in response to Buildkite scheduled jobs. These agents only
+consume resources on the underlying compute platform while they are executing,
+and exit immediately on completion.
+
+**Polling** agents are scheduled in a Kubernetes Deployment and run many
+Buildkite jobs over their lifetime. These agents consume resources on the
+underlying compute platform for the duration of their lifetime. As these agents
+are long lived, you can more keep copies of resources needed by your pipelines
+cached along with you repository’s git data.
+
+Both types of agents are booted from a pod definition loaded from the
+**pod library**.
 
 ## Definitions
 
@@ -18,13 +30,13 @@ Buildkite Agents are scheduled in **pods**.
 
 Pod definitions are loaded from a **pod library**.
 
-Pod definitions include the software and services required
-for your Buildkite Jobs to run in their **containers** e.g.
-Postgres, Redis, memcached.
-
 Pod definitions can be scheduled in **one-shot** or
 ~**long polling**~ mode using Jobs and Deployments respectively.
 NB: **long polling** scheduling mode is not yet implemented.
+
+Pod definitions include the software and services required
+for your Buildkite Jobs to run in their **containers** e.g.
+Postgres, Redis, memcached.
 
 An **elastic-ci-stack** pod definition is included which mimics
 Buildkite’s [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws). This pod definition includes Docker in Docker
