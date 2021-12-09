@@ -14,62 +14,6 @@ function getAgentQueryRule(rule, agentQueryRules) {
     return taskDefinition;
 }
 
-function range(start, stop) {
-    if (typeof stop == 'undefined') {
-        // one param defined
-        stop = start;
-        start = 0;
-    }
-
-    let step = 1024;
-
-    var result = [];
-    for (var i = start; step > 0 ? i <= stop : i > stop; i += step) {
-        result.push(i);
-    }
-
-    return result;
-}
-
-function memoryRangeForCpu(cpu) {
-    if (cpu == 256) {
-        return [512, 1024, 2048];
-    } else if (cpu == 512) {
-        return range(1024, 4096);
-    } else if (cpu == 1024) {
-        return range(2048, 8192);
-    } else if (cpu == 2048) {
-        return range(4096, 16384);
-    } else /* if cpu == 4096 */ {
-        return range(8192, 30720);
-    }
-}
-
-function cpuValues() {
-    return [256, 512, 1024, 2048, 4096]
-}
-
-function supportedCpuMemoryValues() {
-    return cpuValues()
-        .flatMap(cpu => {
-            return memoryRangeForCpu(cpu).map(memory => [cpu, memory])
-        });
-}
-
-function atLeastCpuMemory(requestedCpu, requestedMemory) {
-    let supported = supportedCpuMemoryValues();
-
-    for (let [cpu, memory] of supported) {
-        if (cpu < requestedCpu || memory < requestedMemory) {
-            continue
-        }
-
-        return [cpu, memory]
-    }
-
-    return supported[supported.length - 1];
-}
-
 async function sleep(ms){
     return new Promise(resolve => {
         setTimeout(resolve, ms)
@@ -103,6 +47,32 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
         "--disconnect-after-job",
         "--disconnect-after-idle-timeout=10"
     ]
+
+    let cpuRequest = getAgentQueryRule("cpu", buildkiteJob.agent_query_rules);
+    let memoryRequest = getAgentQueryRule("memory", buildkiteJob.agent_query_rules);
+
+    if (cpuRequest != undefined || memoryRequest != undefined) {
+        let requests = {}
+
+        // These use the k8s native request units
+        // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
+        if (cpuRequest != undefined) {
+            requests.cpu = cpuRequest
+        }
+        if (memoryRequest != undefined) {
+            requests.memory = memoryRequest
+        }
+
+        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ResourceRequirements.ts#L18
+        const buildkiteAgentResources = new k8s.V1ResourceRequirements()
+        buildkiteAgentResources.requests = requests
+
+        // When using a Fargate Profile, it natively rounds up to the required
+        // cpu:memory profile needed.
+        //
+        // https://docs.aws.amazon.com/eks/latest/userguide/fargate-pod-configuration.html
+        buildkiteAgentContainer.resources = buildkiteAgentResources
+    }
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
     const podSpec = new k8s.V1PodSpec();
