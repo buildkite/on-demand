@@ -61,3 +61,26 @@ While these services would not be subject to change, it would be
 possible to host this pod definition on a non-EKS (even non-AWS)
 Kubernetes cluster so long as the necessary service account to IAM Role
 mapping can be established.
+
+## Compute
+
+Buildkite On-Demand EKS supports both Fargate Profiles, and EC2 Node Group
+compute.
+
+If you want to mix both compute types in one cluster and namespace, ensure your
+pod definition affinity or node labels attract EC2-specific pods to your EC2
+node group(s) and do not match the selectors of your Fargate Profile(s). It
+isn’t possible to use anti-affinity with Fargate Profiles to repel pods that
+can’t be scheduled there.
+
+The `elastic-ci-stack` pod defintion must be scheduled on an EC2 instance due to
+the use of privileged mode enabling Docker in Docker.
+
+For example, you might create a Fargate Profile for the `buildkite` namespace
+with a pod selector match label of `platform: fargate`, and an EC2 Node Group
+with a Kubernetes label of `platform: ec2`.
+
+Pods that do not specify a `platform` in their `nodeSelector` or `affinity`
+rules may be scheduled on either compute platform. Pods that specify
+`platform: ec2`, such as the `elastic-ci-stack` pod definition, will only be
+scheduled on an EC2 Node Group.

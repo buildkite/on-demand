@@ -1,10 +1,12 @@
 # agent-scheduler
 
 This project contains source code and supporting files for scheduling one-shot
-Buildkite Agents using AWS Elastic Kubernetes Service in response to jobs.
+Buildkite Agent pods on AWS Elastic Kubernetes Service in response to scheduled
+jobs on Buildkite.
 
 - `src` - Code for the Lambda functions.
 - `template.yml` - A CloudFormation template that defines the AWS resources.
+- `pod-definitions` - Resources for specific pod library definitions
 
 ## Prerequisites
 
@@ -17,7 +19,9 @@ partner event source.
 * **EKS Cluster**: An EKS Cluster that will be used to schedule jobs.
 * **Kubernetes namespace**: A kubernetes namespace to schedule jobs in.
 * **Kubernetes compute**: A kubernetes Node Group or Fategate Profile for pods
-in your given namespace to execute on.
+in your given namespace to execute on. See [compute](../README.md#compute) for
+details on supplying a mix of Fargate Profiles and EC2 Node Groups to your
+cluster.
 
 ## Deploying
 
