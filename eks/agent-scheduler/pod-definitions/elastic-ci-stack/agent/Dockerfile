@@ -1,0 +1,116 @@
+FROM amazonlinux:2
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+RUN yum update -y && \
+	yum install -y curl tar zip gzip pigz git
+
+ENV DOCKER_VERSION=20.10.9
+ENV DOCKER_RELEASE=stable
+
+RUN	case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") docker_arch=x86_64 ;; \
+	"arm64/") docker_arch=aarch64 ;; \
+	"*") echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+	esac && \
+	cd /tmp && \
+	curl --location --fail  --show-error --output docker.tgz "https://download.docker.com/linux/static/${DOCKER_RELEASE}/${docker_arch}/docker-${DOCKER_VERSION}.tgz" && \
+	tar -xvzf docker.tgz && \
+	mv docker/* /usr/bin && \
+	rm docker.tgz
+
+ENV DOCKER_COMPOSE_VERSION=v2.1.1
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") compose_arch=x86_64 ;; \
+	"arm64/") compose_arch=aarch64 ;; \
+	"*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+	esac && \
+	curl --location --fail  --show-error --output /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${compose_arch}" && \
+    chmod +x /usr/local/bin/docker-compose
+
+ENV DOCKER_BUILDX_VERSION=v0.7.0
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+  	"amd64/") buildx_arch=amd64 ;; \
+  	"arm64/") buildx_arch=arm64 ;; \
+    "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+    cli_dir=/usr/libexec/docker/cli-plugins && \
+    mkdir -p "${cli_dir}" && \
+	curl --location --fail  --output "${cli_dir}/docker-buildx" "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-${buildx_arch}" && \
+	chmod +x "${cli_dir}/docker-buildx"
+
+RUN yum install -y unzip && \
+	cd /tmp && \
+	case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") aws_arch="x86_64" ;; \
+	"arm64/") aws_arch="aarch64" ;; \
+    "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+	curl --location --fail  --show-error --output awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" && \
+	unzip awscliv2.zip && \
+	rm awscliv2.zip && \
+	./aws/install && \
+	rm -r ./aws && \
+	aws configure set s3.signature_version s3v4
+
+RUN yum install -y jq
+
+ENV GIT_LFS_RELEASE=v2.10.0
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") lfs_arch="amd64" ;; \
+	"arm64/") lfs_arch="arm64" ;; \
+    "*")      echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+    cd /tmp && \
+    curl --location --fail  --show-error --output git-lfs.tgz https://github.com/git-lfs/git-lfs/releases/download/${GIT_LFS_RELEASE}/git-lfs-linux-${lfs_arch}-${GIT_LFS_RELEASE}.tar.gz && \
+    mkdir git-lfs && \
+    tar -xvzf git-lfs.tgz -C git-lfs && \
+    chmod 755 git-lfs/git-lfs && \
+    ./git-lfs/install.sh && \
+    rm -rf git-lfs.tgz ./git-lfs && \
+    git lfs install
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") agent_arch=x86_64 ;; \
+	"arm64/") agent_arch=aarch64 ;; \
+	"*") echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+	esac && \
+	echo -e "[buildkite-agent]\nname = Buildkite Pty Ltd\nbaseurl = https://yum.buildkite.com/buildkite-agent/stable/${agent_arch}/\nenabled=1\ngpgcheck=0\npriority=1" > /etc/yum.repos.d/buildkite-agent.repo && \
+	yum install -y buildkite-agent
+
+RUN mkdir -p /usr/local/buildkite-aws-stack/plugins
+COPY ["plugins/", "/usr/local/buildkite-aws-stack/plugins"]
+
+ENV S3_SECRETS_HELPER_VERSION=v2.1.5
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") secrets_arch=amd64 ;; \
+	"arm64/") secrets_arch=arm64 ;; \
+	"*") echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+	esac && \
+	curl --location --fail --show-error --output /usr/local/bin/s3secrets-helper "https://github.com/buildkite/elastic-ci-stack-s3-secrets-hooks/releases/download/${S3_SECRETS_HELPER_VERSION}/s3secrets-helper-linux-${secrets_arch}" && \
+	chmod +x /usr/local/bin/s3secrets-helper
+
+RUN mkdir -p /var/lib/buildkite-agent/hooks
+COPY ["hooks/", "/var/lib/buildkite-agent/hooks"]
+
+RUN mkdir -p /etc/buildkite-agent/
+
+COPY ["bin/", "/usr/local/bin"]
+
+ENV TINI_VERSION=v0.19.0
+
+RUN case "${TARGETARCH}/${TARGETVARIANT}" in \
+	"amd64/") tini_arch=amd64 ;; \
+	"arm64/") tini_arch=arm64 ;; \
+	"*") 	  echo "unknown target arch/variant $TARGETARCH/$TARGETVARIANT"; exit 1 ;; \
+    esac && \
+    curl --location --fail --show-error --output /sbin/tini "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${tini_arch}" && \
+    chmod +x /sbin/tini
+
+ENTRYPOINT ["/sbin/tini", "-g", "--"]
+CMD ["/usr/local/bin/install-elastic-ci-stack.sh"]
