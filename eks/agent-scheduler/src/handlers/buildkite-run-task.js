@@ -1,6 +1,8 @@
 const AWS = require('aws-sdk');
 const aws4 = require('aws4');
 const k8s = require('@kubernetes/client-node');
+const yaml = require('yaml');
+const path = require('path');
 
 function getAgentQueryRule(rule, agentQueryRules) {
     let taskDefinition = agentQueryRules.filter(query_rule => {
@@ -20,8 +22,63 @@ async function sleep(ms){
     });
 }
 
-async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+async function fetchPodDefinitionFromLibrary(definitionName) {
+    console.log(`fn=fetchPodDefinitionFromLibrary definitionName=${definitionName}`);
+
+    // "arn:aws:s3:us-east-1::foo-bucket/prefix/baz/bar"
+    const bucketArn = process.env.POD_LIBRARY_BUCKET;
+    if (bucketArn == undefined || bucketArn == "") {
+        throw `Cannot load pod definition from library without the POD_LIBRARY_BUCKET environment variable`
+    }
+
+    console.log(`fn=fetchPodDefinitionFromLibrary bucketArn=${bucketArn}`)
+
+    const partition = bucketArn.split(":")[1]                     // "aws"
+    var   bucketRegion = bucketArn.split(":")[3]                  // "us-east-1" or ""
+    const bucketPath = bucketArn.split(":")[5]                    // "foo-bucket/prefix/baz/bar"
+    const bucketName = bucketPath.split("/")[0]                   // "foo-bucket"
+    const bucketPrefix = bucketPath.split("/").slice(1).join("/") // "prefix/baz/bar" or ""
+
+    console.log(`fn=fetchPodDefinitionFromLibrary partition=${partition} region=${bucketRegion} name=${bucketName} prefix=${bucketPrefix}`)
+
+    if (bucketRegion == "") {
+        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery`)
+
+        const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
+        bucketRegion = (await s3manager.getBucketLocation({
+            Bucket: bucketName
+        }).promise()).LocationConstraint || 'us-east-1'
+
+        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery region=${bucketRegion}`)
+    }
+
+    const podDefinitionPath = path.join(bucketPrefix, definitionName)
+
+    console.log(`fn=fetchPodDefinitionFromLibrary at=get-object s3-path=${podDefinitionPath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
+
+    const s3 = new AWS.S3({
+        apiVersion: '2006-03-01',
+        region: bucketRegion,
+    })
+
+    const object = await s3.getObject({
+        Bucket: bucketName,
+        Key: podDefinitionPath,
+    }).promise()
+
+    return object.Body
+}
+
+function defaultPodSpec() {
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
+    const buildkiteAgentContainer = new k8s.V1Container();
+    buildkiteAgentContainer.name = "agent"
+    buildkiteAgentContainer.image = "buildkite/agent:3"
+    buildkiteAgentContainer.args = [
+        "start",
+        "--disconnect-after-job",
+        "--disconnect-after-idle-timeout=10"
+    ]
 
     // TODO: ideally this would not be stored in plaintext in the env, but
     // supporting arbitrary containers and AssumeRole from k8s roles to get
@@ -30,29 +87,56 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     agentTokenVar.name = "BUILDKITE_AGENT_TOKEN"
     agentTokenVar.value = process.env.BUILDKITE_AGENT_TOKEN;
 
+    buildkiteAgentContainer.env = [
+        agentTokenVar,
+    ]
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
+    const podSpec = new k8s.V1PodSpec();
+    podSpec.containers = [
+        buildkiteAgentContainer,
+    ];
+    podSpec.restartPolicy = "Never"
+
+    return podSpec
+}
+
+async function podLibraryDefaultPodSpec() {
+    let defaultPodDefinitionBuffer = await fetchPodDefinitionFromLibrary('default.yml')
+    let defaultPodDefinition = new String(defaultPodDefinitionBuffer)
+    return yaml.parse(defaultPodDefinition)
+}
+
+async function kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob) {
+    var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
+    if (buildkiteAgentContainer == undefined) {
+        throw `The default.yml pod spec must include a container with name: agent`
+    }
+
     const jobIdVar = new k8s.V1EnvVar();
     jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
     jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
 
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
-    const buildkiteAgentContainer = new k8s.V1Container();
-    buildkiteAgentContainer.name = "agent"
-    buildkiteAgentContainer.image = "buildkite/agent:3"
-    buildkiteAgentContainer.env = [
-        agentTokenVar,
+    buildkiteAgentContainer.env = (buildkiteAgentContainer.env || []).concat([
         jobIdVar,
-    ]
-    buildkiteAgentContainer.args = [
-        "start",
-        "--disconnect-after-job",
-        "--disconnect-after-idle-timeout=10"
-    ]
+    ])
 
     let cpuRequest = getAgentQueryRule("cpu", buildkiteJob.agent_query_rules);
     let memoryRequest = getAgentQueryRule("memory", buildkiteJob.agent_query_rules);
 
     if (cpuRequest != undefined || memoryRequest != undefined) {
-        let requests = {}
+        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ResourceRequirements.ts#L18
+        var resources = buildkiteAgentContainer.resources
+        if (resources == undefined) {
+            resources = new k8s.V1ResourceRequirements()
+            buildkiteAgentContainer.resources = resources
+        }
+
+        var requests = buildkiteAgentResources.requests
+        if (requests == undefined) {
+            requests = {}
+            buildkiteAgentResources.requests = requests
+        }
 
         // These use the k8s native request units
         // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
@@ -62,24 +146,7 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
         if (memoryRequest != undefined) {
             requests.memory = memoryRequest
         }
-
-        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ResourceRequirements.ts#L18
-        const buildkiteAgentResources = new k8s.V1ResourceRequirements()
-        buildkiteAgentResources.requests = requests
-
-        // When using a Fargate Profile, it natively rounds up to the required
-        // cpu:memory profile needed.
-        //
-        // https://docs.aws.amazon.com/eks/latest/userguide/fargate-pod-configuration.html
-        buildkiteAgentContainer.resources = buildkiteAgentResources
     }
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
-    const podSpec = new k8s.V1PodSpec();
-    podSpec.containers = [
-        buildkiteAgentContainer,
-    ];
-    podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
     podTemplate.spec = podSpec;
@@ -104,203 +171,24 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     return k8sJob
 }
 
-async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
-    /*
-        Things to support in the image:
+async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob) {
+    let podDefinitionBuffer = await fetchPodDefinitionFromLibrary(podDefinition)
+    let podSpec = yaml.parse(new String(podDefinitionBuffer))
+    return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
+}
 
-        amazonlinux:2 base image
+async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob) {
+    var podSpec = undefined
 
-        buildkite-agent
-        docker (dind sidecar)
-        aws-cli
-        jq
-        git lfs
-        cloudwatch logs
-        aws ssm
-
-        environment hook
-        - s3-secrets plugin
-        - docker-login plugin
-        - ecr-login plugin
-
-        Things to support at boot time:
-
-        bootstrap script
-        customise buildkite-agent config
-        sshd? + authorized keys param
-        git-mirrors
-        edge agent install?
-
-        k8s role -> IAM role assume (in init-container), requires cluster OIDC
-        setup and configured IAM Role ARN
-        init-container creds could expire, may need a pod sidecar that pretends
-        to be the imds and returns live creds based on k8s -> IAM assume role
-
-        Things for polling agents:
-
-        - Add buildkite-agent-scaler analogue that drives a horizontal pod
-        autoscaler
-    */
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
-    // TODO generate this from a CloudFormation JSON parameter file?
-    const secretsEnabledVar = new k8s.V1EnvVar()
-    secretsEnabledVar.name = "SECRETS_PLUGIN_ENABLED"
-    secretsEnabledVar.value = "true"
-    const ecrEnabledVar = new k8s.V1EnvVar()
-    ecrEnabledVar.name = "ECR_PLUGIN_ENABLED"
-    ecrEnabledVar.value = "true"
-    const dockerLoginEnabledVar = new k8s.V1EnvVar()
-    dockerLoginEnabledVar.name = "DOCKER_LOGIN_PLUGIN_ENABLED"
-    dockerLoginEnabledVar.value = "true"
-    const agentsPerInstanceVar = new k8s.V1EnvVar()
-    agentsPerInstanceVar.name = "BUILDKITE_AGENTS_PER_INSTANCE"
-    agentsPerInstanceVar.value = "1"
-    const ecrPolicyVar = new k8s.V1EnvVar()
-    ecrPolicyVar.name = "BUILDKITE_ECR_POLICY"
-    ecrPolicyVar.value = "full"
-    const secretsBucketVar = new k8s.V1EnvVar()
-    secretsBucketVar.name = "BUILDKITE_SECRETS_BUCKET"
-    secretsBucketVar.value = "buildkite-crossregiontest"
-    const stackNameVar = new k8s.V1EnvVar()
-    stackNameVar.name = "BUILDKITE_STACK_NAME"
-    stackNameVar.value = "buildkite-on-demand-eks-elastic-ci-stack"
-    const stackVersionVar = new k8s.V1EnvVar()
-    stackVersionVar.name = "BUILDKITE_STACK_VERSION"
-    stackVersionVar.value = "0.0.0"
-    const dockerExperimentalVar = new k8s.V1EnvVar()
-    dockerExperimentalVar.name = "DOCKER_EXPERIMENTAL"
-    dockerExperimentalVar.value = "true"
-    const regionVar = new k8s.V1EnvVar()
-    regionVar.name = "AWS_REGION"
-    regionVar.value = process.env.AWS_REGION
-    const defaultRegionVar = new k8s.V1EnvVar()
-    defaultRegionVar.name = "AWS_DEFAULT_REGION"
-    defaultRegionVar.value = process.env.AWS_REGION
-    const buildkiteQueueVar = new k8s.V1EnvVar()
-    buildkiteQueueVar.name = "BUILDKITE_QUEUE"
-    buildkiteQueueVar.value = "eks"
-    const buildkiteAgentTagsVar = new k8s.V1EnvVar()
-    buildkiteAgentTagsVar.name = "BUILDKITE_AGENT_TAGS"
-    buildkiteAgentTagsVar.value = "kubernetes=true"
-    const instanceIdVarFieldRef = new k8s.V1ObjectFieldSelector()
-    instanceIdVarFieldRef.fieldPath = "metadata.name"
-    const instanceIdVarSource = new k8s.V1EnvVarSource()
-    instanceIdVarSource.fieldRef = instanceIdVarFieldRef
-    const instanceIdVar = new k8s.V1EnvVar()
-    instanceIdVar.name = "INSTANCE_ID"
-    instanceIdVar.valueFrom = instanceIdVarSource
-    const timestampLinesVar = new k8s.V1EnvVar()
-    timestampLinesVar.name = "BUILDKITE_AGENT_TIMESTAMP_LINES"
-    timestampLinesVar.value = "false"
-    const experimentsVar = new k8s.V1EnvVar()
-    experimentsVar.name = "BUILDKITE_AGENT_EXPERIMENTS"
-    experimentsVar.value = ""
-    const bootstrapScriptVar = new k8s.V1EnvVar()
-    bootstrapScriptVar.name = "BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT"
-    bootstrapScriptVar.value = ""
-    const buildkiteAgentTokenPathVar = new k8s.V1EnvVar()
-    buildkiteAgentTokenPathVar.name = "BUILDKITE_AGENT_TOKEN_PATH"
-    buildkiteAgentTokenPathVar.value = "/buildkite-aws-stack-testing/buildkite/agent-token"
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts
-    const dockerSocketVolume = new k8s.V1Volume();
-    dockerSocketVolume.name = "docker-socket";
-    dockerSocketVolume.emptyDir = new k8s.V1EmptyDirVolumeSource();
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
-    const jobIdVar = new k8s.V1EnvVar();
-    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
-    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
-    const agentMainContainer = new k8s.V1Container();
-    agentMainContainer.name = "main"
-    agentMainContainer.image = "keithduncan/elastic-ci-stack:latest"
-    agentMainContainer.env = [
-        secretsEnabledVar,
-        ecrEnabledVar,
-        dockerLoginEnabledVar,
-        agentsPerInstanceVar,
-        ecrPolicyVar,
-        secretsBucketVar,
-        stackNameVar,
-        stackVersionVar,
-        dockerExperimentalVar,
-        regionVar,
-        defaultRegionVar,
-        buildkiteQueueVar,
-        buildkiteAgentTagsVar,
-        instanceIdVar,
-        timestampLinesVar,
-        experimentsVar,
-        bootstrapScriptVar,
-        buildkiteAgentTokenPathVar,
-        jobIdVar,
-    ]
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
-    const agentDockerMount = new k8s.V1VolumeMount();
-    agentDockerMount.mountPath = "/var/run/"
-    agentDockerMount.name = dockerSocketVolume.name
-    agentMainContainer.volumeMounts = [
-        agentDockerMount,
-    ]
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1SecurityContext.ts
-    const dindSecurityContext = new k8s.V1SecurityContext();
-    dindSecurityContext.privileged = true
-
-    const dindContainer = new k8s.V1Container();
-    dindContainer.name = "dockerd"
-    dindContainer.image = "docker:20-dind"
-    dindContainer.securityContext = dindSecurityContext;
-    dindContainer.command = [
-        "dockerd"
-    ]
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1VolumeMount.ts
-    const dockerDockerMount = new k8s.V1VolumeMount();
-    dockerDockerMount.name = dockerSocketVolume.name
-    dockerDockerMount.mountPath = "/var/run/"
-    dindContainer.volumeMounts = [
-        dockerDockerMount,
-    ]
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
-    const podSpec = new k8s.V1PodSpec();
-    podSpec.containers = [
-        agentMainContainer,
-        dindContainer,
-    ]
-    podSpec.volumes = [
-        dockerSocketVolume,
-    ]
-    podSpec.nodeSelector = {
-        "platform": "ec2",
+    try {
+        podSpec = await podLibraryDefaultPodSpec()
     }
-    podSpec.serviceAccountName = "elastic-ci-stack"
-    podSpec.restartPolicy = "Never"
+    catch (e) {
+        console.log(`fn=kubernetesJobForDefaultPodDefinitionAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
+        podSpec = defaultPodSpec()
+    }
 
-    const podTemplate = new k8s.V1PodTemplateSpec();
-    podTemplate.spec = podSpec;
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1JobSpec.ts
-    const jobSpec = new k8s.V1JobSpec();
-    jobSpec.template = podTemplate;
-    // Automatically clean up completed jobs after 10 minutes
-    jobSpec.ttlSecondsAfterFinished = 10 * 60;
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ObjectMeta.ts
-    const metadata = new k8s.V1ObjectMeta();
-    metadata.name = buildkiteJob.uuid || buildkiteJob.id
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Job.ts
-    const k8sJob = new k8s.V1Job();
-    k8sJob.apiVersion = 'batch/v1';
-    k8sJob.kind = 'Job';
-    k8sJob.metadata = metadata;
-    k8sJob.spec = jobSpec;
-
-    return k8sJob
+    return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
 }
 
 /*
@@ -308,9 +196,6 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 
     This is where you would implement custom k8s job spec look up based on the
     Buildkite Job’s agent query rules.
-
-    Presently all jobs are run inside the buildkite/agent:3 image with no
-    sidecar containers.
 
     Some ideas for where you could keep your library of named pod specs:
 
@@ -322,19 +207,18 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
     Some ideas for how this function could be adapted:
 
     - add support for single container dynamic `image` using agent query rules
-    - map `cpu` and `memory` agent query rules to pod/container resource
-      requests
     - add support for pod roles which can be mapped to IAM Roles outside the
       cluster using OIDC
 */
 async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     let podDefinition = getAgentQueryRule("pod-definition", buildkiteJob.agent_query_rules);
+    if (podDefinition != undefined) {
+        console.log(`fn=kubernetesJobForBuildkiteJob podDefinition=${podDefinition}`)
 
-    if (podDefinition == "elastic-ci-stack") {
-        return elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob)
+        return kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob)
     }
 
-    return defaultKubernetesJobForBuildkiteJob(buildkiteJob)
+    return kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
 }
 
 async function scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, buildkiteJob) {
@@ -356,7 +240,7 @@ async function runTaskForBuildkiteJob(k8sApi, namespace, job) {
             return result;
         }
         catch (e) {
-            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${JSON.stringify(e)}`);
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${e} error=${JSON.stringify(e)}`);
             
             await sleep(1000 * Math.pow(attempt, 2));
             

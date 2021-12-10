@@ -20,6 +20,7 @@ Metadata:
         Parameters:
           - EventBridgeBusName
           - VpcSubnets
+          - PodLibraryBucket
       -
         Label:
           default: Kubernetes
@@ -41,6 +42,11 @@ Parameters:
     Type: CommaDelimitedList
     Description: Optional – VPC Security Group Ids that the agent-scheduler Lambda ENI should belong to. Required if your Kubernetes cluster is *Private*.
     Default: ""
+  PodLibraryBucket:
+    Type: String
+    Description: Optional – S3 Bucket ARN (including region) and path prefix from which to load pod library definitions.
+    Default: ""
+    # AllowedPattern: arn:[a-z\-]:s3:[a-z0-9\-]::[a-zA-Z0-9\-\_](/[a-zA-Z0-9\-\_])*?
   BuildkiteQueue:
     Type: String
     Description: Queue name that agents will be scheduled for on-demand, targeted in pipeline steps using an agent query rule "queue={value}".
@@ -66,6 +72,8 @@ Parameters:
 Conditions:
   HasVpc:
     !Not [ !Equals [ "", !Join [ "", !Ref VpcSubnets ] ] ]
+  HasPodLibraryBucket:
+    !Not [ !Equals [ "", !Ref PodLibraryBucket ] ]
 
 Resources:
   RunTaskQueue:
@@ -137,12 +145,36 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - SQSPollerPolicy:
             QueueName: !GetAtt RunTaskQueue.QueueName
+        - !If
+          - HasPodLibraryBucket
+          - Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetBucketLocation
+                - s3:ListBucket
+                - s3:GetObject
+              Resource:
+                - !Sub
+                  - arn:${bucketPartition}:s3:::${bucketPath}
+                  - bucketPartition: !Select [ 1, !Split [ ":", !Ref PodLibraryBucket ] ]
+                    bucketPath: !Select [ 5, !Split [ ":", !Ref PodLibraryBucket ] ]
+                - !Sub
+                  - arn:${bucketPartition}:s3:::${bucketPath}/*
+                  - bucketPartition: !Select [ 1, !Split [ ":", !Ref PodLibraryBucket ] ]
+                    bucketPath: !Select [ 5, !Split [ ":", !Ref PodLibraryBucket ] ]
+          - !Ref AWS::NoValue
       Environment:
         Variables:
           KUBERNETES_CLUSTER_IDENTIFIER: !Ref KubernetesClusterIdentifier
           KUBERNETES_API_SERVER_ENDPOINT: !Ref KubernetesApiServerEndpoint
           KUBERNETES_CERTIFICATE_AUTHORITY_DATA: !Ref KubernetesCertificateAuthorityData
           KUBERNETES_NAMESPACE: !Ref KubernetesNamespace
+          POD_LIBRARY_BUCKET:
+            !If
+              - HasPodLibraryBucket
+              - !Ref PodLibraryBucket
+              - !Ref AWS::NoValue
           BUILDKITE_AGENT_TOKEN: !Ref BuildkiteAgentTokenParameterPath
       VpcConfig:
         !If
