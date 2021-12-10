@@ -22,6 +22,9 @@ partner event source.
 in your given namespace to execute on. See [compute](../README.md#compute) for
 details on supplying a mix of Fargate Profiles and EC2 Node Groups to your
 cluster.
+* **S3 Pod Library**: An S3 bucket containing named pod definitions that can be
+scheduled on the Kubernetes cluster. See [pod-library](pod-library) for more
+example pod definitions.
 
 ## Deploying
 
