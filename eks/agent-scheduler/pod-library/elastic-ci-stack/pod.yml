@@ -1,0 +1,62 @@
+---
+containers:
+  - name: agent
+    image: keithduncan/elastic-ci-stack:latest
+    env:
+      - name: SECRETS_PLUGIN_ENABLED
+        value: "true"
+      - name: ECR_PLUGIN_ENABLED
+        value: "true"
+      - name: DOCKER_LOGIN_PLUGIN_ENABLED
+        value: "true"
+      - name: BUILDKITE_AGENTS_PER_INSTANCE
+        value: "1"
+      - name: BUILDKITE_ECR_POLICY
+        value: "full"
+      - name: BUILDKITE_SECRETS_BUCKET
+        value: "buildkite-crossregiontest"
+      - name: BUILDKITE_STACK_NAME
+        value: "buildkite-on-demand-eks-elastic-ci-stack"
+      - name: BUILDKITE_STACK_VERSION
+        value: "0.0.0"
+      - name: DOCKER_EXPERIMENTAL
+        value: "true"
+      - name: AWS_REGION
+        value: ap-southeast-2
+      - name: AWS_DEFAULT_REGION
+        value: ap-southeast-2
+      - name: BUILDKITE_QUEUE
+        value: eks
+      - name: BUILDKITE_AGENT_TAGS
+        value: kubernetes=true
+      - name: INSTANCE_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: BUILDKITE_AGENT_TIMESTAMP_LINES
+        value: "false"
+      - name: BUILDKITE_AGENT_EXPERIMENTS
+        value: ""
+      - name: BUILDKITE_ELASTIC_BOOTSTRAP_SCRIPT
+        value: ""
+      - name: BUILDKITE_AGENT_TOKEN_PATH
+        value: "/buildkite-aws-stack-testing/buildkite/agent-token"
+    volumeMounts:
+      - name: docker-socket
+        mountPath: "/var/run"
+  - name: dockerd
+    image: docker:20-dind
+    command:
+      - dockerd
+    volumeMounts:
+      - name: docker-socket
+        mountPath: "/var/run/"
+    securityContext:
+      privileged: true
+volumes:
+  - name: docker-socket
+    emptyDir: {}
+nodeSelector:
+  platform: ec2
+serviceAccountName: "elastic-ci-stack"
+restartPolicy: Never

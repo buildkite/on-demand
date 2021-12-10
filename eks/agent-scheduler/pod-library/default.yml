@@ -6,4 +6,7 @@ containers:
       - start
       - --disconnect-after-job
       - --disconnect-after-idle-timeout=10
+    env:
+      - name: BUILDKITE_AGENT_TAGS
+        value: "foo=bar"
 restartPolicy: Never
