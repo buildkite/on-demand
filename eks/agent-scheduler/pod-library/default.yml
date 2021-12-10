@@ -1,0 +1,9 @@
+---
+containers:
+  - name: agent
+    image: buildkite/agent:3
+    args:
+      - start
+      - --disconnect-after-job
+      - --disconnect-after-idle-timeout=10
+restartPolicy: Never
