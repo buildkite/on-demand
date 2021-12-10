@@ -27,7 +27,7 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
     // "arn:aws:s3:us-east-1::foo-bucket/prefix/baz/bar"
     const bucketArn = process.env.POD_LIBRARY_BUCKET;
     if (bucketArn == undefined || bucketArn == "") {
-        return undefined
+        throw `Cannot load pod definition from library without the POD_LIBRARY_BUCKET environment variable`
     }
 
     const partition = bucketArn.split(":")[1]                     // "aws"
@@ -38,12 +38,9 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
 
     if (bucketRegion == "") {
         const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
-        bucketRegion = await s3manager.getBucketLocation({
+        bucketRegion = (await s3manager.getBucketLocation({
             Bucket: bucketName
-        })
-        if (bucketRegion == undefined) {
-            bucketRegion = 'us-east-1'
-        }
+        })).LocationConstraint || 'us-east-1'
     }
 
     const podDefinitionPath = path.join(bucketPrefix, definitionName)
@@ -86,17 +83,20 @@ async function defaultPodSpec() {
     return podSpec
 }
 
+async function defaultPodLibrarySpec() {
+    let defaultPodDefinitionBuffer = await fetchPodDefinitionFromLibrary('default.yml')
+    let defaultPodDefinition = new String(defaultPodDefinitionBuffer)
+    return yaml.parse(defaultPodDefinition)
+}
+
 async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     var podSpec = undefined
 
     try {
-        // First try to load a default pod from the library
-        let defaultPodDefinitionBuffer = await fetchPodDefinitionFromLibrary('default.yml')
-        let defaultPodDefinition = new String(defaultPodDefinitionBuffer)
-        podSpec = yaml.parse(defaultPodDefinition)
+        podSpec = await defaultPodLibrarySpec()
     }
     catch (e) {
-        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch-error e=${JSON.stringify(e)}`)
+        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch-error error=${JSON.stringify(e)}`)
         podSpec = defaultPodSpec()
     }
 
@@ -396,6 +396,7 @@ async function elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob) {
 */
 async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     let podDefinition = getAgentQueryRule("pod-definition", buildkiteJob.agent_query_rules);
+    console.log(`fn=kubernetesJobForBuildkiteJob podDefinition=${podDefinition}`);
 
     if (podDefinition == "elastic-ci-stack") {
         return elasticCiStackKubernetesJobForBuildkiteJob(buildkiteJob)
