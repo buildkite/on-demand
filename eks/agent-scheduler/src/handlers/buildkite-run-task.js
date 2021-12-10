@@ -47,7 +47,7 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
         const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
         bucketRegion = (await s3manager.getBucketLocation({
             Bucket: bucketName
-        })).LocationConstraint || 'us-east-1'
+        }).promise()).LocationConstraint || 'us-east-1'
 
         console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery region=${bucketRegion}`)
     }
@@ -64,7 +64,7 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
     const object = await s3.getObject({
         Bucket: bucketName,
         Key: podDefinitionPath,
-    })
+    }).promise()
 
     return object.Body
 }
@@ -110,7 +110,7 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
         podSpec = defaultPodSpec()
     }
 
-    console.log(`fn=defaultKubernetesJobForBuildkiteJob at=default`)
+    console.log(`fn=defaultKubernetesJobForBuildkiteJob at=pod-spec podSpec=${podSpec}`)
 
     var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
     if (buildkiteAgentContainer == undefined) {
@@ -436,7 +436,7 @@ async function runTaskForBuildkiteJob(k8sApi, namespace, job) {
             return result;
         }
         catch (e) {
-            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${JSON.stringify(e)}`);
+            console.log(`fn=runTaskForBuildkiteJob attempt=${attempt} at=error error=${e} error=${JSON.stringify(e)}`);
             
             await sleep(1000 * Math.pow(attempt, 2));
             
