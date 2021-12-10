@@ -26,7 +26,13 @@ cluster.
 scheduled on the Kubernetes cluster. See [pod-library](pod-library) for more
 example pod definitions.
 
-## Deploying
+## Deploy using the AWS Serverless Application Repository web console
+
+[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:172840064832:applications~buildkite-on-demand-scheduler-eks)
+
+See the the CLI documentation below for details on the parameters.
+
+## Deploy using the AWS Serverless Application Model command line interface
 
 ### Build the Lambda code
 
@@ -82,6 +88,17 @@ use for kubernetes API requests. This can be found on the EKS Dashboard under
 * **Parameter KubernetesCertificateAuthorityData**: The EKS cluster Certificate
 authority data. This can be found on the EKS Dashboard under *<Your-Cluster>* >
 *Configuration* > *Details* > *Certificate authority*.
+* **Parameter VpcSubnets**: If using a *Private* network access EKS cluster, a
+comma separated list of VPC subnet IDs that the Lambda can create an ENI in.
+These can be found on the EKS Dashboard under *<Your-Cluster>* >
+*Configuration* > *Networking* > *Subnets*.
+* **Parameter VpcSecurityGroupIds**: If using a *Private* network access EKS
+cluster, the security group ids needed to communicate with the EKS control
+plane. These can be found on the EKS Dashboard under *<Your-Cluster>* >
+*Configuration* > *Networking* > *Cluster security group* and
+*Additional security groups*.
+* **Parameter PodLibraryBucket**: The ARN for an S3 Bucket, including region and
+key prefix that agent-scheduler should use to look up named pod definitions.
 * **Confirm changes before deploy**: If set to yes, any change sets will be
 shown to you before execution for manual review. If set to no, the AWS SAM CLI
 will automatically deploy changes.

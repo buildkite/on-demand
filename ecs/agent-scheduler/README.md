@@ -23,7 +23,7 @@ whether you want to deploy the on-demand template instead.
 
 ## Deploy using the AWS Serverless Application Repository web console
 
-[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:832577133680:applications~buildkite-on-demand-scheduler)
+[![Deploy AWS Serverless Application](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:172840064832:applications~buildkite-on-demand-scheduler)
 
 The serverless application repository console will ask you for values for the
 following parameters:

@@ -20,6 +20,7 @@ Metadata:
         Parameters:
           - EventBridgeBusName
           - VpcSubnets
+          - VpcSecurityGroupIds
           - PodLibraryBucket
       -
         Label:
