@@ -183,14 +183,14 @@ async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, build
     return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
 }
 
-async function kubernetesJobForDefaultPodSpecAndBuildkiteJob(buildkiteJob) {
+async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob) {
     var podSpec = undefined
 
     try {
         podSpec = await podLibraryDefaultPodSpec()
     }
     catch (e) {
-        console.log(`fn=kubernetesJobForDefaultPodSpecAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
+        console.log(`fn=kubernetesJobForDefaultPodDefinitionAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
         podSpec = defaultPodSpec()
     }
 
@@ -224,7 +224,7 @@ async function kubernetesJobForBuildkiteJob(buildkiteJob) {
         return kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob)
     }
 
-    return kubernetesJobForDefaultPodSpecAndBuildkiteJob(buildkiteJob)
+    return kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
 }
 
 async function scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, buildkiteJob) {
