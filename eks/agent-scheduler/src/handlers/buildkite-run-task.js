@@ -20,6 +20,48 @@ async function sleep(ms){
     });
 }
 
+async function fetchPodDefinitionFromLibrary(definitionName) {
+    console.log(`fn=fetchPodDefinitionFromLibrary definitionName=${definitionName}`);
+
+    // "arn:aws:s3:us-east-1::foo-bucket/prefix/baz/bar"
+    const bucketArn = process.env.POD_LIBRARY_BUCKET;
+    if (bucketArn == undefined || bucketArn == "") {
+        return undefined
+    }
+
+    const partition = bucketArn.split(":")[1]                     // "aws"
+    var   bucketRegion = bucketArn.split(":")[3]                  // "us-east-1" or ""
+    const bucketPath = bucketArn.split(":")[5]                    // "foo-bucket/prefix/baz/bar"
+    const bucketName = bucketPath.split("/")[0]                   // "foo-bucket"
+    const bucketPrefix = bucketPath.split("/").slice(1).join("/") // "prefix/baz/bar" or ""
+
+    if (bucketRegion == "") {
+        const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
+        bucketRegion = await s3manager.getBucketLocation({
+            Bucket: bucketName
+        })
+        if (bucketRegion == undefined) {
+            bucketRegion = 'us-east-1'
+        }
+    }
+
+    const podDefinitionPath = path.join(bucketPrefix, definitionName)
+
+    console.log(`fn=fetchPodDefinitionFromLibrary s3-path=${podDefinitionPath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
+
+    const s3 = new AWS.S3({
+        apiVersion: '2006-03-01',
+        region: bucketRegion,
+    })
+
+    const object = await s3.getObject({
+        Bucket: bucketName,
+        Key: podDefinitionPath,
+    })
+
+    return object
+}
+
 async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
 
