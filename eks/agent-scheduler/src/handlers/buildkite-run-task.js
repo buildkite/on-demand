@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const aws4 = require('aws4');
 const k8s = require('@kubernetes/client-node');
+const yaml = require('yaml');
 
 function getAgentQueryRule(rule, agentQueryRules) {
     let taskDefinition = agentQueryRules.filter(query_rule => {
@@ -59,11 +60,50 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
         Key: podDefinitionPath,
     })
 
-    return object
+    return object.Body
+}
+
+async function defaultPodSpec() {
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
+    const buildkiteAgentContainer = new k8s.V1Container();
+    buildkiteAgentContainer.name = "agent"
+    buildkiteAgentContainer.image = "buildkite/agent:3"
+    buildkiteAgentContainer.args = [
+        "start",
+        "--disconnect-after-job",
+        "--disconnect-after-idle-timeout=10"
+    ]
+
+    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
+    const podSpec = new k8s.V1PodSpec();
+    podSpec.containers = [
+        buildkiteAgentContainer,
+    ];
+    podSpec.restartPolicy = "Never"
+
+    return podSpec
 }
 
 async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
+    var podSpec = undefined
+
+    try {
+        // First try to load a default pod from the library
+        let defaultPodDefinitionBuffer = await fetchPodDefinitionFromLibrary('default.yml')
+        let defaultPodDefinition = new String(defaultPodDefinitionBuffer)
+        podSpec = yaml.parse(defaultPodDefinition)
+    }
+    catch (e) {
+        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch-error e=${JSON.stringify(e)}`)
+        podSpec = defaultPodSpec()
+    }
+
+    var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
+    if (buildkiteAgentContainer == undefined) {
+        throw `The default.yml pod spec must include a container with name: agent`
+    }
 
     // TODO: ideally this would not be stored in plaintext in the env, but
     // supporting arbitrary containers and AssumeRole from k8s roles to get
@@ -76,25 +116,27 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
     jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
 
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
-    const buildkiteAgentContainer = new k8s.V1Container();
-    buildkiteAgentContainer.name = "agent"
-    buildkiteAgentContainer.image = "buildkite/agent:3"
-    buildkiteAgentContainer.env = [
+    buildkiteAgentContainer.env = (buildkiteAgentContainer.env || []).concat([
         agentTokenVar,
         jobIdVar,
-    ]
-    buildkiteAgentContainer.args = [
-        "start",
-        "--disconnect-after-job",
-        "--disconnect-after-idle-timeout=10"
-    ]
+    ])
 
     let cpuRequest = getAgentQueryRule("cpu", buildkiteJob.agent_query_rules);
     let memoryRequest = getAgentQueryRule("memory", buildkiteJob.agent_query_rules);
 
     if (cpuRequest != undefined || memoryRequest != undefined) {
-        let requests = {}
+        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ResourceRequirements.ts#L18
+        var resources = buildkiteAgentContainer.resources
+        if (resources == undefined) {
+            resources = new k8s.V1ResourceRequirements()
+            buildkiteAgentContainer.resources = resources
+        }
+
+        var requests = buildkiteAgentResources.requests
+        if (requests == undefined) {
+            requests = {}
+            buildkiteAgentResources.requests = requests
+        }
 
         // These use the k8s native request units
         // https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes
@@ -104,24 +146,7 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
         if (memoryRequest != undefined) {
             requests.memory = memoryRequest
         }
-
-        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1ResourceRequirements.ts#L18
-        const buildkiteAgentResources = new k8s.V1ResourceRequirements()
-        buildkiteAgentResources.requests = requests
-
-        // When using a Fargate Profile, it natively rounds up to the required
-        // cpu:memory profile needed.
-        //
-        // https://docs.aws.amazon.com/eks/latest/userguide/fargate-pod-configuration.html
-        buildkiteAgentContainer.resources = buildkiteAgentResources
     }
-
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
-    const podSpec = new k8s.V1PodSpec();
-    podSpec.containers = [
-        buildkiteAgentContainer,
-    ];
-    podSpec.restartPolicy = "Never"
 
     const podTemplate = new k8s.V1PodTemplateSpec();
     podTemplate.spec = podSpec;

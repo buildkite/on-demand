@@ -2,6 +2,7 @@
   "dependencies": {
     "@kubernetes/client-node": "^0.16.0",
     "aws-sdk": "^2.1028.0",
-    "aws4": "^1.11.0"
+    "aws4": "^1.11.0",
+    "yaml": "^1.10.2"
   }
 }
