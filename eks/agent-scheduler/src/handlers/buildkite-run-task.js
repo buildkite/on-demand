@@ -173,8 +173,7 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob) {
 
 async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob) {
     let podDefinitionBuffer = await fetchPodDefinitionFromLibrary(podDefinition)
-    let podDefinition = new String(podDefinitionBuffer)
-    let podSpec = yaml.parse(podDefinition)
+    let podSpec = yaml.parse(new String(podDefinitionBuffer))
     return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
 }
 
