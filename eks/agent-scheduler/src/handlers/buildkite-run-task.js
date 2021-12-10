@@ -108,11 +108,6 @@ async function podLibraryDefaultPodSpec() {
 }
 
 async function kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob) {
-    // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1EnvVar.ts#L19
-    const jobIdVar = new k8s.V1EnvVar();
-    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
-    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
-
     var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
     if (buildkiteAgentContainer == undefined) {
         throw `The default.yml pod spec must include a container with name: agent`
