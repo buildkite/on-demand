@@ -2,6 +2,7 @@ const AWS = require('aws-sdk');
 const aws4 = require('aws4');
 const k8s = require('@kubernetes/client-node');
 const yaml = require('yaml');
+const path = require('path');
 
 function getAgentQueryRule(rule, agentQueryRules) {
     let taskDefinition = agentQueryRules.filter(query_rule => {
@@ -30,22 +31,30 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
         throw `Cannot load pod definition from library without the POD_LIBRARY_BUCKET environment variable`
     }
 
+    console.log(`fn=fetchPodDefinitionFromLibrary bucketArn=${bucketArn}`)
+
     const partition = bucketArn.split(":")[1]                     // "aws"
     var   bucketRegion = bucketArn.split(":")[3]                  // "us-east-1" or ""
     const bucketPath = bucketArn.split(":")[5]                    // "foo-bucket/prefix/baz/bar"
     const bucketName = bucketPath.split("/")[0]                   // "foo-bucket"
     const bucketPrefix = bucketPath.split("/").slice(1).join("/") // "prefix/baz/bar" or ""
 
+    console.log(`fn=fetchPodDefinitionFromLibrary partition=${partition} region=${bucketRegion} name=${bucketName} prefix=${bucketPrefix}`)
+
     if (bucketRegion == "") {
+        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery`)
+
         const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
         bucketRegion = (await s3manager.getBucketLocation({
             Bucket: bucketName
         })).LocationConstraint || 'us-east-1'
+
+        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery region=${bucketRegion}`)
     }
 
     const podDefinitionPath = path.join(bucketPrefix, definitionName)
 
-    console.log(`fn=fetchPodDefinitionFromLibrary s3-path=${podDefinitionPath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
+    console.log(`fn=fetchPodDefinitionFromLibrary at=get-object s3-path=${podDefinitionPath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
 
     const s3 = new AWS.S3({
         apiVersion: '2006-03-01',
@@ -93,12 +102,15 @@ async function defaultKubernetesJobForBuildkiteJob(buildkiteJob) {
     var podSpec = undefined
 
     try {
+        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch`)
         podSpec = await defaultPodLibrarySpec()
     }
     catch (e) {
-        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch-error error=${JSON.stringify(e)}`)
+        console.log(`fn=defaultKubernetesJobForBuildkiteJob at=fetch-error error=${e} error=${JSON.stringify(e)}`)
         podSpec = defaultPodSpec()
     }
+
+    console.log(`fn=defaultKubernetesJobForBuildkiteJob at=default`)
 
     var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
     if (buildkiteAgentContainer == undefined) {
