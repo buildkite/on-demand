@@ -74,3 +74,9 @@ of the IAM step
 Once you have edited the pod template YAML that meets your requirements, copy it
 to your [pod library](../) for the `agent-scheduler` Lambda to use when
 scheduling workloads on your cluster.
+
+## TODO
+
+Add way to stamp out multiple different 'elastic-ci-stack' pod templates
+each with their own service account and IAM role, likely using terraform
+for multi-provider operations.

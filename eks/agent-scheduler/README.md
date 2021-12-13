@@ -6,7 +6,7 @@ jobs on Buildkite.
 
 - `src` - Code for the Lambda functions.
 - `template.yml` - A CloudFormation template that defines the AWS resources.
-- `pod-definitions` - Resources for specific pod library definitions
+- `pod-library` - Resources for specific pod library templates
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ Subsequent deploys can be run using `sam deploy`.
 ### Grant Kubernetes RBAC permissions
 
 Once you have deployed the `agent-scheduler` you must grant the Lambda’s IAM
-Role permission to create jobs in your Kubernetes cluster.
+Role permission to create jobs in a namespace on your Kubernetes cluster.
 
 These commands use the [eksctl](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 and [kubectl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
@@ -142,9 +142,3 @@ eksctl utils write-kubeconfig --cluster <YOUR-CLUSTER> --region <YOUR-REGION>
 kubectl create namespace buildkite
 kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
 ```
-
-TODO
-
-Add way to stamp out multiple different 'elastic-ci-stack' pod templates
-each with their own service account and IAM role, likely using terraform
-for multi-provider operations.
