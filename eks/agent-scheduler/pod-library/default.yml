@@ -7,8 +7,6 @@ containers:
       - --disconnect-after-job
       - --disconnect-after-idle-timeout=10
     env:
-      - name: BUILDKITE_AGENT_TAGS
-        value: "foo=bar"
       - name: BUILDKITE_AGENT_TOKEN
         valueFrom:
           secretKeyRef:

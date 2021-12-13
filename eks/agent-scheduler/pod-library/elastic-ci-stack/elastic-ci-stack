@@ -27,8 +27,6 @@ containers:
         value: ap-southeast-2
       - name: BUILDKITE_QUEUE
         value: eks
-      - name: BUILDKITE_AGENT_TAGS
-        value: kubernetes=true
       - name: INSTANCE_ID
         valueFrom:
           fieldRef:

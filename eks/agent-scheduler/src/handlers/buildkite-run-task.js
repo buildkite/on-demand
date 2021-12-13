@@ -89,6 +89,7 @@ function defaultPodSpec() {
 
     buildkiteAgentContainer.env = [
         agentTokenVar,
+        agentTagsVar,
     ]
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1PodSpec.ts#L29
@@ -107,19 +108,37 @@ async function podLibraryDefaultPodSpec() {
     return yaml.parse(defaultPodDefinition)
 }
 
-async function kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob) {
-    var buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
+async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob) {
+    let buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
     if (buildkiteAgentContainer == undefined) {
-        throw `The default.yml pod spec must include a container with name: agent`
+        throw `Cannot find the agent container in the ${podDefinition} pod spec. A pod spec must include a container with "name: agent" for one-shot scheduling in a Kubernetes Job.`
     }
 
-    const jobIdVar = new k8s.V1EnvVar();
-    jobIdVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB";
-    jobIdVar.value = buildkiteJob.uuid || buildkiteJob.id;
+    buildkiteAgentContainer.env = (buildkiteAgentContainer.env || [])
 
-    buildkiteAgentContainer.env = (buildkiteAgentContainer.env || []).concat([
-        jobIdVar,
-    ])
+    const jobIdVarValue = buildkiteJob.uuid || buildkiteJob.id
+
+    var acquireJobVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_AGENT_ACQUIRE_JOB")
+    if (acquireJobVar == undefined) {
+        acquireJobVar = new k8s.V1EnvVar()
+        acquireJobVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB"
+        acquireJobVar.value = jobIdVarValue
+        buildkiteAgentContainer.env.push(acquireJobVar)
+    } else {
+        acquireJobVar.value = jobIdVarValue
+    }
+
+    // TODO make buildkite-eks-stack hold the version of the stack
+    const tagsVarValue = `buildkite-eks-stack=true,pod-definition=${podDefinition}`
+    var tagsVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_AGENT_TAGS")
+    if (tagsVar == undefined) {
+        tagsVar = new k8s.V1EnvVar()
+        tagsVar.name = "BUILDKITE_AGENT_TAGS"
+        tagsVar.value = tagsVarValue
+        buildkiteAgentContainer.env.push(tagsVar)
+    } else {
+        tagsVar.value = `${tagsVar.value},${tagsVarValue}`
+    }
 
     let cpuRequest = getAgentQueryRule("cpu", buildkiteJob.agent_query_rules);
     let memoryRequest = getAgentQueryRule("memory", buildkiteJob.agent_query_rules);
@@ -174,7 +193,7 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob) {
 async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob) {
     let podDefinitionBuffer = await fetchPodDefinitionFromLibrary(podDefinition)
     let podSpec = yaml.parse(new String(podDefinitionBuffer))
-    return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
+    return kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob)
 }
 
 async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob) {
@@ -188,7 +207,7 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
         podSpec = defaultPodSpec()
     }
 
-    return kubernetesJobForPodSpecAndBuildkiteJob(podSpec, buildkiteJob)
+    return kubernetesJobForPodSpecAndBuildkiteJob("default", podSpec, buildkiteJob)
 }
 
 /*
