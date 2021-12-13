@@ -24,6 +24,11 @@ cached along with you repository’s git data.
 Both types of agents are booted from a pod definition loaded from the
 **pod library**.
 
+An [`elastic-ci-stack`](#elastic-ci-stack) pod definition,
+that mimics the [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws),
+has been included that you can use as an example to build your own
+pod definitions.
+
 ## Definitions
 
 Buildkite Agents are scheduled in **pods**.
@@ -38,8 +43,10 @@ Pod definitions include the software and services required
 for your Buildkite Jobs to run in their **containers** e.g.
 Postgres, Redis, memcached.
 
-An **elastic-ci-stack** pod definition is included which mimics
-Buildkite’s [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws). This pod definition includes Docker in Docker
+## elastic-ci-stack
+
+The **elastic-ci-stack** [pod definition](agent-scheduler/pod-library/elastic-ci-stack)
+mimics Buildkite’s [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws). This pod definition includes Docker in Docker
 allowing you to transfer existing Elastic CI Stack for AWS pipelines
 to a new On-Demand EKS deployment. This pod definition requires the use
 of EC2 Node Groups, and privileged pods for Docker in Docker.
@@ -63,16 +70,16 @@ by using Kubernetes native pod service accounts, Roles, and
 RoleBindings, to give the pod scheduler the necessary permissions
 to self-schedule pods on the hosting cluster.
 
-The **elastic-ci-stack** pod definition is necessarily AWS specific
-by nature and mimics the EC2-based Elastic CI Stack for AWS. It
-uses AWS S3 to retrieve secrets, and can be configured to login to AWS ECR.
-In order to authenticate access to these services, an IAM IdP provider
-for the EKS OpenID Connect service must be configured, and a mapping
-between the pod’s service account and an IAM Role provided.
-While these services would not be subject to change, it would be
-possible to host this pod definition on a non-EKS (even non-AWS)
-Kubernetes cluster so long as the necessary service account to IAM Role
-mapping can be established.
+The [**elastic-ci-stack** pod definition](#elastic-ci-stack) is
+necessarily AWS specific by nature and mimics the EC2-based Elastic
+CI Stack for AWS. It uses AWS S3 to retrieve secrets, and can be
+configured to login to AWS ECR. In order to authenticate access to
+these services, an IAM IdP provider for the EKS OpenID Connect
+service must be configured, and a mapping between the pod’s service
+account and an IAM Role provided. While these services would not be
+subject to change, it would be possible to host this pod definition
+on a non-EKS (even non-AWS) Kubernetes cluster so long as the
+necessary service account to IAM Role mapping can be established.
 
 ## Compute
 

@@ -17,3 +17,6 @@ a Buildkite Agent token to the `buildkite-agent`. You might accomplish this
 using an environment variable and `valueFrom` a [native Kubernetes secret](https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/),
 or something like the [AWS Secrets and Configuration Provider driver](https://docs.aws.amazon.com/eks/latest/userguide/manage-secrets.html)
 to expose AWS Secrets Manager and AWS SSM Parameter Store values to your pods.
+
+See [`elastic-ci-stack`](elastic-ci-stack) for an example pod
+definition that mimics the [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws).

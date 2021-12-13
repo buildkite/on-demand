@@ -23,7 +23,7 @@ in your given namespace to execute on. See [compute](../README.md#compute) for
 details on supplying a mix of Fargate Profiles and EC2 Node Groups to your
 cluster.
 * **S3 Pod Library**: An S3 bucket containing named pod definitions that can be
-scheduled on the Kubernetes cluster. See [pod-library](pod-library) for more
+scheduled on the Kubernetes cluster. See [pod-library](pod-library) for
 example pod definitions.
 
 ## Deploy using the AWS Serverless Application Repository web console
@@ -144,16 +144,7 @@ kubectl create namespace buildkite
 kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
 ```
 
-### Create an IAM role, policy, and service account mapping for the elastic-ci-stack pod definition
-
-See [pod-definitions/elastic-ci-stack/iam](pod-definitions/elastic-ci-stack/iam)
-for instructions.
-
 TODO
-
-Add something like https://github.com/nrmitchi/k8s-controller-sidecars
-that will terminate sidecar containers if the "main" / agent container
-in a pod has exited.
 
 Add way to stamp out multiple different 'elastic-ci-stack' pod definitions
 each with their own service account and IAM role, likely using terraform
