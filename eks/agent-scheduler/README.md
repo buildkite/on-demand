@@ -22,9 +22,9 @@ partner event source.
 in your given namespace to execute on. See [compute](../README.md#compute) for
 details on supplying a mix of Fargate Profiles and EC2 Node Groups to your
 cluster.
-* **S3 Pod Library**: An S3 bucket containing named pod definitions that can be
-scheduled on the Kubernetes cluster. See [pod-library](pod-library) for
-example pod definitions.
+* **S3 Pod Library**: An S3 bucket containing named [pod templates](https://github.com/kubernetes-client/javascript/blob/master/src/gen/model/v1PodTemplateSpec.ts)
+that can be scheduled on the Kubernetes cluster. See [pod-library](pod-library)
+for example pod templates.
 
 ## Deploy using the AWS Serverless Application Repository web console
 
@@ -98,14 +98,13 @@ plane. These can be found on the EKS Dashboard under *<Your-Cluster>* >
 *Configuration* > *Networking* > *Cluster security group* and
 *Additional security groups*.
 * **Parameter PodLibraryBucket**: The ARN for an S3 Bucket, including region and
-key prefix that agent-scheduler should use to look up named pod definitions.
+key prefix that agent-scheduler should use to look up named pod templates.
 * **Confirm changes before deploy**: If set to yes, any change sets will be
 shown to you before execution for manual review. If set to no, the AWS SAM CLI
 will automatically deploy changes.
 * **Allow SAM CLI IAM role creation**: You must answer yes to this prompt. This
-SAM application creates an AWS IAM role for your ECS task definitions and roles
-for the AWS Lambda functions. These are scoped down to minimum required
-permissions.
+SAM application creates an AWS IAM roles for the AWS Lambda functions. These are
+scoped down to minimum required permissions.
 * **Save arguments to samconfig.toml**: Set to yes so your choices are saved to
 a configuration file inside the project. In the future you can just re-run
 `sam deploy` without parameters to deploy changes.
@@ -146,6 +145,6 @@ kubectl apply -f buildkite-role.yaml --namespace <YOUR-KUBERNETES-NAMESPACE>
 
 TODO
 
-Add way to stamp out multiple different 'elastic-ci-stack' pod definitions
+Add way to stamp out multiple different 'elastic-ci-stack' pod templates
 each with their own service account and IAM role, likely using terraform
 for multi-provider operations.

@@ -1,16 +1,15 @@
-# elastic-ci-stack pod definition
+# elastic-ci-stack pod template
 
-The `elastic-ci-stack` pod definition mimics the
+The `elastic-ci-stack` pod template mimics the
 [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws).
 
 This directory contains:
 
 - [`agent/`](agent) a `Dockerfile` and the scripts necessary to build an image
-for this pod definition.
-- [`elastic-ci-stack`](elastic-ci-stack) the Kubernetes pod spec YAML for this
-pod definition.
+for this pod template.
+- [`elastic-ci-stack`](elastic-ci-stack) the Kubernetes pod template YAML
 - [`iam/`](iam) Kubernetes YAML and a CloudFormation template to deploy a
-service account and IAM role for this pod definition.
+service account and IAM role for this pod template.
 
 ## Image
 
@@ -28,7 +27,7 @@ AMI:
 
 ## IAM Resources
 
-This pod definition requires an
+This pod template requires an
 [AWS IAM OIDC Identity Provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
 Using that the pod’s Kubernetes service account’s credentials the AWS CLI will
 automatically retrieve AWS credentials using `sts:AssumeRoleWithWebIdentity`.
@@ -38,20 +37,21 @@ IAM role needed.
 
 ## Compute
 
-As this pod definition uses Docker in Docker which requires a privileged
-container, it can only be scheduled on an EC2 Node Group.
+As this pod template includes a Docker in Docker container, it can only be
+scheduled on an EC2 Node Group where `privileged` mode is permitted.
 
-As Docker in Docker is run as a container adjacent to the `buildkite-agent`, and
-kubernetes lacks a way to describe sidecar container lifecycles, you must
-separately arrange for this container to be terminated when the agent container
-exits. The example pod definition uses the annotations from
-https://github.com/nrmitchi/k8s-controller-sidecars though you must arrange for
-this to be deployed to your cluster for them to have any effect.
+Addionally, as Docker in Docker is run as a container adjacent to the
+`buildkite-agent`, and Kubernetes does not yet include a way to describe sidecar
+container lifecycles, you must separately arrange for this container to be
+terminated when the agent container exits. The example pod template uses the
+annotations from https://github.com/nrmitchi/k8s-controller-sidecars though you
+must arrange for this to be deployed to your cluster for them to have any
+effect.
 
 ## Deploying
 
 Once you have deployed the pre-requisites, you must customise this pod
-definition, you should:
+template, you should:
 
 - Replace the pod spec’s `.containers[.name = 'agent'].image` field with an
 image repository you control

@@ -22,16 +22,16 @@ async function sleep(ms){
     });
 }
 
-async function fetchPodDefinitionFromLibrary(definitionName) {
-    console.log(`fn=fetchPodDefinitionFromLibrary definitionName=${definitionName}`);
+async function fetchPodTemplateFromLibrary(templateName) {
+    console.log(`fn=fetchPodTemplateFromLibrary templateName=${templateName}`);
 
     // "arn:aws:s3:us-east-1::foo-bucket/prefix/baz/bar"
     const bucketArn = process.env.POD_LIBRARY_BUCKET;
     if (bucketArn == undefined || bucketArn == "") {
-        throw `Cannot load pod definition from library without the POD_LIBRARY_BUCKET environment variable`
+        throw `Cannot load pod template from library without the POD_LIBRARY_BUCKET environment variable`
     }
 
-    console.log(`fn=fetchPodDefinitionFromLibrary bucketArn=${bucketArn}`)
+    console.log(`fn=fetchPodTemplateFromLibrary bucketArn=${bucketArn}`)
 
     const partition = bucketArn.split(":")[1]                     // "aws"
     var   bucketRegion = bucketArn.split(":")[3]                  // "us-east-1" or ""
@@ -39,22 +39,22 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
     const bucketName = bucketPath.split("/")[0]                   // "foo-bucket"
     const bucketPrefix = bucketPath.split("/").slice(1).join("/") // "prefix/baz/bar" or ""
 
-    console.log(`fn=fetchPodDefinitionFromLibrary partition=${partition} region=${bucketRegion} name=${bucketName} prefix=${bucketPrefix}`)
+    console.log(`fn=fetchPodTemplateFromLibrary partition=${partition} region=${bucketRegion} name=${bucketName} prefix=${bucketPrefix}`)
 
     if (bucketRegion == "") {
-        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery`)
+        console.log(`fn=fetchPodTemplateFromLibrary at=region-discovery`)
 
         const s3manager = new AWS.S3({apiVersion: '2006-03-01'})
         bucketRegion = (await s3manager.getBucketLocation({
             Bucket: bucketName
         }).promise()).LocationConstraint || 'us-east-1'
 
-        console.log(`fn=fetchPodDefinitionFromLibrary at=region-discovery region=${bucketRegion}`)
+        console.log(`fn=fetchPodTemplateFromLibrary at=region-discovery region=${bucketRegion}`)
     }
 
-    const podDefinitionPath = path.join(bucketPrefix, definitionName)
+    const podTemplatePath = path.join(bucketPrefix, templateName)
 
-    console.log(`fn=fetchPodDefinitionFromLibrary at=get-object s3-path=${podDefinitionPath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
+    console.log(`fn=fetchPodTemplateFromLibrary at=get-object s3-path=${podTemplatePath} s3-bucket=${bucketName} s3-region=${bucketRegion}`);
 
     const s3 = new AWS.S3({
         apiVersion: '2006-03-01',
@@ -63,13 +63,13 @@ async function fetchPodDefinitionFromLibrary(definitionName) {
 
     const object = await s3.getObject({
         Bucket: bucketName,
-        Key: podDefinitionPath,
+        Key: podTemplatePath,
     }).promise()
 
     return object.Body
 }
 
-function defaultPodSpec() {
+function defaultPodTemplate() {
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Container.ts#L27
     const buildkiteAgentContainer = new k8s.V1Container();
     buildkiteAgentContainer.name = "agent"
@@ -99,19 +99,21 @@ function defaultPodSpec() {
     ];
     podSpec.restartPolicy = "Never"
 
-    return podSpec
+    const template = new k8s.V1PodTemplateSpec()
+    template.spec = podSpec
+    return template
 }
 
-async function podLibraryDefaultPodSpec() {
-    let defaultPodDefinitionBuffer = await fetchPodDefinitionFromLibrary('default.yml')
-    let defaultPodDefinition = new String(defaultPodDefinitionBuffer)
-    return yaml.parse(defaultPodDefinition)
+async function podLibraryDefaultPodTemplate() {
+    let defaultPodTemplateBuffer = await fetchPodTemplateFromLibrary('default.yml')
+    let defaultPodTemplate = new String(defaultPodTemplateBuffer)
+    return yaml.parse(defaultPodTemplate)
 }
 
-async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob) {
-    let buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
+async function kubernetesJobForPodTemplateAndBuildkiteJob(templateName, podTemplate, buildkiteJob) {
+    let buildkiteAgentContainer = podTemplate.spec.containers.find(container => container.name == "agent")
     if (buildkiteAgentContainer == undefined) {
-        throw `Cannot find the agent container in the ${podDefinition} pod spec. A pod spec must include a container with "name: agent" for one-shot scheduling in a Kubernetes Job.`
+        throw `Cannot find the agent container in the ${templateName} pod template. A pod template must include a container with "name: agent" for one-shot scheduling in a Kubernetes Job.`
     }
 
     buildkiteAgentContainer.env = (buildkiteAgentContainer.env || [])
@@ -129,7 +131,7 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, bu
     }
 
     // TODO make buildkite-eks-stack hold the version of the stack
-    const tagsVarValue = `buildkite-eks-stack=true,pod-definition=${podDefinition}`
+    const tagsVarValue = `buildkite-eks-stack=true,pod-template=${templateName}`
     var tagsVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_AGENT_TAGS")
     if (tagsVar == undefined) {
         tagsVar = new k8s.V1EnvVar()
@@ -167,9 +169,6 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, bu
         }
     }
 
-    const podTemplate = new k8s.V1PodTemplateSpec();
-    podTemplate.spec = podSpec;
-
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1JobSpec.ts
     const jobSpec = new k8s.V1JobSpec();
     jobSpec.template = podTemplate;
@@ -190,13 +189,13 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, bu
     return k8sJob
 }
 
-async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob) {
-    let podDefinitionBuffer = await fetchPodDefinitionFromLibrary(podDefinition)
-    let podSpec = yaml.parse(new String(podDefinitionBuffer))
-    return kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob)
+async function kubernetesJobForPodTemplateNameAndBuildkiteJob(templateName, buildkiteJob) {
+    let podTemplateBuffer = await fetchPodTemplateFromLibrary(templateName)
+    let podTemplate = yaml.parse(new String(podTemplateBuffer))
+    return kubernetesJobForPodTemplateAndBuildkiteJob(templateName, podTemplate, buildkiteJob)
 }
 
-function injectAgentSidecarIntoPodSpecContainer(podDefinition, podSpec, containerName, image) {
+function injectAgentSidecarIntoPodTemplateContainers(templateName, podTemplate, containerName, image) {
     /*
         1. A volume is shared between the init container and the "agent"
            container
@@ -207,10 +206,12 @@ function injectAgentSidecarIntoPodSpecContainer(podDefinition, podSpec, containe
         5. Add the buildkite agent config vars to the main container
     */
 
-    let buildkiteAgentContainer = podSpec.containers.find(container => container.name == containerName)
+    let buildkiteAgentContainer = podTemplate.spec.containers.find(container => container.name == containerName)
     if (buildkiteAgentContainer == undefined) {
-        throw `Cannot find the ${containerName} container in the ${podDefinition} pod spec. A pod spec must include a container with "name: ${containerName}" for agent sideloading.`
+        throw `Cannot find the ${containerName} container in the ${templateName} pod template. A pod template must include a container with "name: ${containerName}" for agent sideloading.`
     }
+
+    let podSpec = podTemplate.spec;
 
     // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts#L47
     const buildkiteVolume = new k8s.V1Volume()
@@ -290,32 +291,32 @@ function injectAgentSidecarIntoPodSpecContainer(podDefinition, podSpec, containe
     }
 }
 
-async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob) {
-    var podDefinition = undefined
-    var podSpec = undefined
+async function kubernetesJobForDefaultPodTemplateAndBuildkiteJob(buildkiteJob) {
+    var templateName = undefined
+    var podTemplate = undefined
 
     try {
-        podDefinition = "default.yml"
-        podSpec = await podLibraryDefaultPodSpec()
+        templateName = "default.yml"
+        podTemplate = await podLibraryDefaultPodTemplate()
     }
     catch (e) {
-        console.log(`fn=kubernetesJobForDefaultPodDefinitionAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
+        console.log(`fn=kubernetesJobForDefaultPodTemplateAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
 
-        podDefinition = "defaultPodSpec"
-        podSpec = defaultPodSpec()
+        templateName = "defaultPodSpec"
+        podTemplate = defaultPodTemplate()
     }
 
     /*
         The default pod spec (loaded from S3 or static) can have its image
-        changed, pod definitions i.e. named pod-specs cannot
+        changed, pod templates i.e. named pod-specs cannot
     */
 
     let image = getAgentQueryRule("image", buildkiteJob.agent_query_rules);
     if (image != undefined) {
-        injectAgentSidecarIntoPodSpecContainer(podDefinition, podSpec, "agent", image)
+        injectAgentSidecarIntoPodTemplateContainers(templateName, podTemplate, "agent", image)
     }
 
-    return kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob)
+    return kubernetesJobForPodTemplateAndBuildkiteJob(templateName, podTemplate, buildkiteJob)
 }
 
 /*
@@ -337,14 +338,14 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
       cluster using OIDC
 */
 async function kubernetesJobForBuildkiteJob(buildkiteJob) {
-    let podDefinition = getAgentQueryRule("pod-definition", buildkiteJob.agent_query_rules);
-    if (podDefinition != undefined) {
-        console.log(`fn=kubernetesJobForBuildkiteJob podDefinition=${podDefinition}`)
+    let podTemplate = getAgentQueryRule("pod-template", buildkiteJob.agent_query_rules);
+    if (podTemplate != undefined) {
+        console.log(`fn=kubernetesJobForBuildkiteJob podTemplate=${podTemplate}`)
 
-        return kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, buildkiteJob)
+        return kubernetesJobForPodTemplateNameAndBuildkiteJob(podTemplate, buildkiteJob)
     }
 
-    return kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
+    return kubernetesJobForDefaultPodTemplateAndBuildkiteJob(buildkiteJob)
 }
 
 async function scheduleKubernetesJobForBuildkiteJob(k8sApi, namespace, buildkiteJob) {

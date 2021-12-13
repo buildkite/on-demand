@@ -21,35 +21,34 @@ underlying compute platform for the duration of their lifetime. As these agents
 are long lived, you can more keep copies of resources needed by your pipelines
 cached along with you repository’s git data.
 
-Both types of agents are booted from a pod definition loaded from the
+Both types of agents are booted from a pod template loaded from the
 **pod library**.
 
-An [`elastic-ci-stack`](#elastic-ci-stack) pod definition,
+An [`elastic-ci-stack`](#elastic-ci-stack) pod template,
 that mimics the [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws),
 has been included that you can use as an example to build your own
-pod definitions.
+pod templates.
 
 ## Definitions
 
 Buildkite Agents are scheduled in **pods**.
 
-Pod definitions are loaded from a **pod library**.
+Pod templates are loaded from a **pod library**.
 
-Pod definitions can be scheduled in **one-shot** or
+Pod templates can be scheduled in **one-shot** or
 ~**long polling**~ mode using Jobs and Deployments respectively.
 NB: **long polling** scheduling mode is not yet implemented.
 
-Pod definitions include the software and services required
-for your Buildkite Jobs to run in their **containers** e.g.
-Postgres, Redis, memcached.
+Pods include the software and services required for your Buildkite Jobs to run
+in their **containers** e.g. Postgres, Redis, memcached.
 
 ## elastic-ci-stack
 
-The **elastic-ci-stack** [pod definition](agent-scheduler/pod-library/elastic-ci-stack)
-mimics Buildkite’s [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws). This pod definition includes Docker in Docker
-allowing you to transfer existing Elastic CI Stack for AWS pipelines
-to a new On-Demand EKS deployment. This pod definition requires the use
-of EC2 Node Groups, and privileged pods for Docker in Docker.
+The [**elastic-ci-stack** pod template](agent-scheduler/pod-library/elastic-ci-stack)
+mimics Buildkite’s [Elastic CI Stack for AWS](https://github.com/buildkite/elastic-ci-stack-for-aws). This pod includes Docker in Docker allowing you to
+run existing Elastic CI Stack for AWS pipelines to a new On-Demand EKS
+deployment. This pod template requires the use of EC2 Node Groups, and
+privileged pods for Docker in Docker.
 
 ## EKS Specific Components
 
@@ -70,14 +69,14 @@ by using Kubernetes native pod service accounts, Roles, and
 RoleBindings, to give the pod scheduler the necessary permissions
 to self-schedule pods on the hosting cluster.
 
-The [**elastic-ci-stack** pod definition](#elastic-ci-stack) is
+The [**elastic-ci-stack** pod template](#elastic-ci-stack) is
 necessarily AWS specific by nature and mimics the EC2-based Elastic
 CI Stack for AWS. It uses AWS S3 to retrieve secrets, and can be
 configured to login to AWS ECR. In order to authenticate access to
 these services, an IAM IdP provider for the EKS OpenID Connect
 service must be configured, and a mapping between the pod’s service
 account and an IAM Role provided. While these services would not be
-subject to change, it would be possible to host this pod definition
+subject to change, it would be possible to host this pod template
 on a non-EKS (even non-AWS) Kubernetes cluster so long as the
 necessary service account to IAM Role mapping can be established.
 
@@ -87,12 +86,12 @@ Buildkite On-Demand EKS supports both Fargate Profiles, and EC2 Node Group
 compute.
 
 If you want to mix both compute types in one cluster and namespace, ensure your
-pod definition affinity or node labels attract EC2-specific pods to your EC2
+pod template’s affinity or node labels attract EC2-specific pods to your EC2
 node group(s) and do not match the selectors of your Fargate Profile(s). It
 isn’t possible to use anti-affinity with Fargate Profiles to repel pods that
 can’t be scheduled there.
 
-The `elastic-ci-stack` pod defintion must be scheduled on an EC2 instance due to
+The `elastic-ci-stack` pod template must be scheduled on an EC2 instance due to
 the use of privileged mode enabling Docker in Docker.
 
 For example, you might create a Fargate Profile for the `buildkite` namespace
@@ -101,5 +100,5 @@ with a Kubernetes label of `platform: ec2`.
 
 Pods that do not specify a `platform` in their `nodeSelector` or `affinity`
 rules may be scheduled on either compute platform. Pods that specify
-`platform: ec2`, such as the `elastic-ci-stack` pod definition, will only be
+`platform: ec2`, such as the `elastic-ci-stack` pod template, will only be
 scheduled on an EC2 Node Group.
