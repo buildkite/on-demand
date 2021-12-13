@@ -118,7 +118,7 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, bu
 
     const jobIdVarValue = buildkiteJob.uuid || buildkiteJob.id
 
-    var acquireJobVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_AGENT_ACQUIRE_JOB")
+    var acquireJobVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_AGENT_ACQUIRE_JOB")
     if (acquireJobVar == undefined) {
         acquireJobVar = new k8s.V1EnvVar()
         acquireJobVar.name = "BUILDKITE_AGENT_ACQUIRE_JOB"
@@ -130,7 +130,7 @@ async function kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, bu
 
     // TODO make buildkite-eks-stack hold the version of the stack
     const tagsVarValue = `buildkite-eks-stack=true,pod-definition=${podDefinition}`
-    var tagsVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_AGENT_TAGS")
+    var tagsVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_AGENT_TAGS")
     if (tagsVar == undefined) {
         tagsVar = new k8s.V1EnvVar()
         tagsVar.name = "BUILDKITE_AGENT_TAGS"
@@ -278,7 +278,7 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
         ]
 
         var buildsPath = "/buildkite/builds"
-        var buildsPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_BUILD_PATH")
+        var buildsPathVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_BUILD_PATH")
         if (buildsPathVar == undefined) {
             buildsPathVar = new k8s.V1EnvVar()
             buildsPathVar.name = "BUILDKITE_BUILD_PATH"
@@ -289,7 +289,7 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
         }
 
         var hooksPath = "/buildkite/hooks"
-        var hooksPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_HOOKS_PATH")
+        var hooksPathVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_HOOKS_PATH")
         if (hooksPathVar == undefined) {
             hooksPathVar = new k8s.V1EnvVar()
             hooksPathVar.name = "BUILDKITE_HOOKS_PATH"
@@ -300,7 +300,7 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
         }
 
         var pluginsPath = "/buildkite/plugins"
-        var pluginsPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_PLUGINS_PATH")
+        var pluginsPathVar = buildkiteAgentContainer.env.find(envVar => envVar.name == "BUILDKITE_PLUGINS_PATH")
         if (pluginsPathVar == undefined) {
             pluginsPathVar = new k8s.V1EnvVar()
             pluginsPathVar.name = "BUILDKITE_PLUGINS_PATH"
