@@ -197,17 +197,121 @@ async function kubernetesJobForPodDefinitionAndBuildkiteJob(podDefinition, build
 }
 
 async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob) {
+    var podDefinition = undefined
     var podSpec = undefined
 
     try {
+        podDefinition = "default.yml"
         podSpec = await podLibraryDefaultPodSpec()
     }
     catch (e) {
         console.log(`fn=kubernetesJobForDefaultPodDefinitionAndBuildkiteJob at=error error=${e} error=${JSON.stringify(e)}`)
+
+        podDefinition = "defaultPodSpec"
         podSpec = defaultPodSpec()
     }
 
-    return kubernetesJobForPodSpecAndBuildkiteJob("default", podSpec, buildkiteJob)
+    /*
+        The default pod spec (loaded from S3 or static) can have its image
+        changed, pod definitions i.e. named pod-specs cannot
+    */
+
+    let image = getAgentQueryRule("image", buildkiteJob.agent_query_rules);
+    if (image != undefined) {
+        /*
+            1. A volume is shared between the init container and the "agent"
+               container
+            2. An init container with "buildkite/agent:3-sidecar" is added, it
+               copies the contents of /buildkite to /buildkite-init
+            3 The "agent" container image is replaced with the given image
+            4. Re-write the agent container's entrypoint to /buildkite/bin/buildkite-agent
+            5. Add the buildkite agent config vars to the main container
+        */
+
+        let buildkiteAgentContainer = podSpec.containers.find(container => container.name == "agent")
+        if (buildkiteAgentContainer == undefined) {
+            throw `Cannot find the agent container in the ${podDefinition} pod spec. A pod spec must include a container with "name: agent" for agent sideloading.`
+        }
+
+        // https://github.com/kubernetes-client/javascript/blob/6b713dc83f494e03845fca194b84e6bfbd86f31c/src/gen/model/v1Volume.ts#L47
+        const buildkiteVolume = new k8s.V1Volume()
+        // TODO technically this name could collide, append random suffix?
+        buildkiteVolume.name = "agent-sidecar"
+        buildkiteVolume.emptyDir = new k8s.V1EmptyDirVolumeSource()
+
+        podSpec.volumes = podSpec.volumes || [];
+        podSpec.volumes.push(buildkiteVolume)
+
+        const sidecarContainer = new k8s.V1Container()
+        // TODO technically this name could collide, append random suffix?
+        sidecarContainer.name = "agent-init"
+        sidecarContainer.image = "buildkite/agent:3-sidecar"
+        sidecarContainer.workingDir = "/buildkite"
+        sidecarContainer.args = [
+            "cp",
+            "-R",
+            "*",
+            "/buildkite-init",
+        ]
+        const sidecarBuildkiteVolumeMount = new k8s.V1VolumeMount()
+        sidecarBuildkiteVolumeMount.mountPath = "/buildkite-init"
+        sidecarBuildkiteVolumeMount.name = buildkiteVolume.name
+        sidecarContainer.volumeMounts = [
+            sidecarBuildkiteVolumeMount,
+        ]
+
+        podSpec.initContainers = podSpec.initContainers || []
+        podSpec.initContainers.push(sidecarContainer)
+
+        buildkiteAgentContainer.image = image
+
+        const agentBuildkiteVolumeMount = new k8s.V1VolumeMount()
+        agentBuildkiteVolumeMount.mountPath = "/buildkite"
+        agentBuildkiteVolumeMount.name = buildkiteVolume.name
+        buildkiteAgentContainer.volumeMounts = buildkiteAgentContainer.volumeMounts || []
+        buildkiteAgentContainer.volumeMounts.push(
+            agentBuildkiteVolumeMount,
+        )
+
+        buildkiteAgentContainer.command = [
+            "/buildkite/bin/buildkite-agent"
+        ]
+
+        var buildsPath = "/buildkite/builds"
+        var buildsPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_BUILD_PATH")
+        if (buildsPathVar == undefined) {
+            buildsPathVar = new k8s.V1EnvVar()
+            buildsPathVar.name = "BUILDKITE_BUILD_PATH"
+            buildsPathVar.value = buildsPath
+            buildkiteAgentContainer.env.push(buildsPathVar)
+        } else {
+            buildsPathVar.value = buildsPath
+        }
+
+        var hooksPath = "/buildkite/hooks"
+        var hooksPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_HOOKS_PATH")
+        if (hooksPathVar == undefined) {
+            hooksPathVar = new k8s.V1EnvVar()
+            hooksPathVar.name = "BUILDKITE_HOOKS_PATH"
+            hooksPathVar.value = hooksPath
+            buildkiteAgentContainer.env.push(hooksPathVar)
+        } else {
+            hooksPathVar.value = hooksPath
+        }
+
+        var pluginsPath = "/buildkite/plugins"
+        var pluginsPathVar = buildkiteAgentContainer.env.find(var => var.name == "BUILDKITE_PLUGINS_PATH")
+        if (pluginsPathVar == undefined) {
+            pluginsPathVar = new k8s.V1EnvVar()
+            pluginsPathVar.name = "BUILDKITE_PLUGINS_PATH"
+            pluginsPathVar.value = pluginsPath
+            buildkiteAgentContainer.env.push(pluginsPathVar)
+        } else {
+            pluginsPathVar.value = pluginsPath
+        }
+    }
+
+    return kubernetesJobForPodSpecAndBuildkiteJob(podDefinition, podSpec, buildkiteJob)
 }
 
 /*
@@ -225,7 +329,6 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
 
     Some ideas for how this function could be adapted:
 
-    - add support for single container dynamic `image` using agent query rules
     - add support for pod roles which can be mapped to IAM Roles outside the
       cluster using OIDC
 */
