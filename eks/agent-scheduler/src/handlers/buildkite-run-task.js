@@ -334,8 +334,8 @@ async function kubernetesJobForDefaultPodTemplateAndBuildkiteJob(buildkiteJob) {
 
     Some ideas for how this function could be adapted:
 
-    - add support for pod roles which can be mapped to IAM Roles outside the
-      cluster using OIDC
+    - add support for dynamic service account overrides which can be mapped to
+      IAM Roles outside the cluster using OIDC
 */
 async function kubernetesJobForBuildkiteJob(buildkiteJob) {
     let podTemplate = getAgentQueryRule("pod-template", buildkiteJob.agent_query_rules);

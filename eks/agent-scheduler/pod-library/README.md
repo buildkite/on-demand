@@ -6,7 +6,8 @@ stored in an AWS S3 bucket.
 Your pod library can contain as many named pod templates as you want.
 
 If present, a `default.yml` pod template will be used when your Buildkite job
-agent query rules do not specify a pod template.
+agent query rules do not specify a pod template. If absent, `agent-scheduler`
+includes a hard coded default pod template.
 
 The files stored in the given bucket key prefix should contain a Kubernetes
 PodTemplateSpec in YAML. See [default.yml](default.yml) for the expected format.
