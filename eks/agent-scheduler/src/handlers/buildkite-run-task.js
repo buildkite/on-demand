@@ -250,7 +250,7 @@ async function kubernetesJobForDefaultPodDefinitionAndBuildkiteJob(buildkiteJob)
         sidecarContainer.args = [
             "cp",
             "-R",
-            "*",
+            ".",
             "/buildkite-init",
         ]
         const sidecarBuildkiteVolumeMount = new k8s.V1VolumeMount()
