@@ -48,11 +48,11 @@ scheduled on an EC2 Node Group where `privileged` mode is permitted.
 
 Addionally, as Docker in Docker is run as a container adjacent to the
 `buildkite-agent`, and Kubernetes does not yet include a way to describe sidecar
-container lifecycles, you must separately arrange for this container to be
-terminated when the agent container exits. The example pod template uses the
-annotations from https://github.com/nrmitchi/k8s-controller-sidecars though you
-must arrange for this to be deployed to your cluster for them to have any
-effect.
+container lifecycles. You must arrange for the `dockerd` container in the pod to
+be terminated when the `agent` container exits.
+Third-party solutions like https://github.com/nrmitchi/k8s-controller-sidecars
+can be used to coordinate this though you must arrange for this to be deployed
+to your cluster for them to have any effect.
 
 ### 4. Update the pod template
 

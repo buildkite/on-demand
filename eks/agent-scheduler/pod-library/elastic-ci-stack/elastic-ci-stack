@@ -1,7 +1,4 @@
 ---
-metadata:
-  annotations:
-    nrmitchi.com/sidecars: dockerd
 spec:
   containers:
     - name: agent
