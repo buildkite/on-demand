@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> On-Demand is no longer actively maintained or supported. We suggest exploring [Agent Stack K8s](https://github.com/buildkite/agent-stack-k8s) as an alternative.
+
 # Buildkite On-Demand
 
 Schedule single-shot Buildkite Agents, on-demand, on ECS.
